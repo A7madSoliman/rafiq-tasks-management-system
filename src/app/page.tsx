@@ -1,9 +1,15 @@
-import { cn } from '@/lib/cn';
+import { Button } from '@/components/ui/button';
 
 export default function Home() {
   return (
-    <main className="bg-background p-xl text-foreground">
-      <div className={cn('bg-primary px-sm py-sm text-on-primary', 'px-xl')}>Taskly</div>
+    <main className="bg-background p-xl">
+      <div className="gap-md flex items-center">
+        <Button variant="secondary">Primary Action</Button>
+
+        <Button variant="primary">Secondary</Button>
+
+        <Button variant="ghost">Ghost Action</Button>
+      </div>
     </main>
   );
 }
