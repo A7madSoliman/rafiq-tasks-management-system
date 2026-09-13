@@ -2,15 +2,22 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm, useWatch } from 'react-hook-form';
 import EyeOffIcon from '@/assets/icons/eye-off.svg';
 import EyeOnIcon from '@/assets/icons/eye-on.svg';
+import ValidationPassedIcon from '@/assets/icons/validation-passed.svg';
+import ValidationPendingIcon from '@/assets/icons/validation-pending.svg';
 import { Button } from '@/components/ui/button';
 import { FieldLabel } from '@/components/ui/field-label';
 import { Input } from '@/components/ui/input';
+import { signupSchema, type SignupFormValues } from '@/features/auth/schemas/signup-schema';
+import { getPasswordChecks } from '../validation/password-rules';
 
 const inputClassName =
-  'h-14 rounded-md px-md py-[18px] text-[16px] text-foreground placeholder:text-foreground-subtle sm:h-12 sm:rounded-sm sm:py-[14px]';
+  'h-14 rounded-md px-md py-[18px] text-[15px] text-foreground placeholder:text-foreground-subtle sm:h-12 sm:rounded-sm sm:py-[14px]';
+
+const passwordInputClassName = `${inputClassName} pr-[53px] sm:pr-12`;
 
 const labelClassName =
   'pl-2xs text-[11px] leading-[16.5px] tracking-[0.55px] text-foreground-secondary sm:text-foreground-muted';
@@ -18,6 +25,33 @@ const labelClassName =
 export function SignupForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    control,
+    formState: { errors },
+  } = useForm<SignupFormValues>({
+    resolver: zodResolver(signupSchema),
+    mode: 'onTouched',
+    reValidateMode: 'onChange',
+    defaultValues: {
+      name: '',
+      email: '',
+      jobTitle: '',
+      password: '',
+      confirmPassword: '',
+    },
+  });
+
+  const password = useWatch({
+    control,
+    name: 'password',
+    defaultValue: '',
+  });
+
+  const passwordChecks = getPasswordChecks(password);
+
   return (
     <section
       aria-labelledby="signup-title"
@@ -42,7 +76,7 @@ export function SignupForm() {
         </div>
       </header>
 
-      <form className="gap-lg flex flex-col">
+      <form noValidate className="gap-lg flex flex-col" onSubmit={handleSubmit(() => undefined)}>
         <div>
           <div className="flex flex-col gap-1.5">
             <FieldLabel
@@ -54,15 +88,22 @@ export function SignupForm() {
 
             <Input
               id="name"
-              name="name"
               placeholder="Enter your full name"
+              aria-invalid={Boolean(errors.name)}
               className={inputClassName}
+              {...register('name')}
             />
           </div>
 
-          <p className="text-outline sm:pl-2xs mt-1.5 text-[11px] leading-[16.5px]">
-            3-50 characters, letters only.
-          </p>
+          {errors.name ? (
+            <p className="text-error sm:pl-2xs mt-1.5 text-[11px] leading-[16.5px]">
+              {errors.name.message}
+            </p>
+          ) : (
+            <p className="text-outline sm:pl-2xs mt-1.5 text-[11px] leading-[16.5px]">
+              3-50 characters, letters only.
+            </p>
+          )}
         </div>
 
         <div className="flex flex-col gap-1.5">
@@ -72,11 +113,18 @@ export function SignupForm() {
 
           <Input
             id="email"
-            name="email"
             type="email"
             placeholder="yourname@company.com"
+            aria-invalid={Boolean(errors.email)}
             className={inputClassName}
+            {...register('email')}
           />
+
+          {errors.email && (
+            <p className="text-error sm:pl-2xs text-[11px] leading-[16.5px]">
+              {errors.email.message}
+            </p>
+          )}
         </div>
 
         <div className="flex flex-col gap-1.5">
@@ -89,14 +137,14 @@ export function SignupForm() {
 
           <Input
             id="jobTitle"
-            name="jobTitle"
             placeholder="e.g. Project Manager"
             className={inputClassName}
+            {...register('jobTitle')}
           />
         </div>
 
-        <div className="gap-lg sm:gap-md grid grid-cols-1 sm:grid-cols-2">
-          <div className="flex h-[78.5px] flex-col gap-1.5 sm:h-auto">
+        <div className="gap-lg sm:gap-md grid grid-cols-1 items-start sm:grid-cols-2">
+          <div className="flex flex-col gap-1.5">
             <FieldLabel htmlFor="password" className={labelClassName}>
               Password
             </FieldLabel>
@@ -104,10 +152,11 @@ export function SignupForm() {
             <div className="relative">
               <Input
                 id="password"
-                name="password"
                 type={showPassword ? 'text' : 'password'}
                 placeholder="Password"
-                className={`${inputClassName} h-12 py-[14px] pr-[53px] sm:pr-12`}
+                aria-invalid={Boolean(errors.password)}
+                className={passwordInputClassName}
+                {...register('password')}
               />
 
               <button
@@ -115,27 +164,19 @@ export function SignupForm() {
                 onClick={() => setShowPassword((current) => !current)}
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
                 aria-pressed={showPassword}
-                className="absolute top-1/2 right-[6px] flex size-10 -translate-y-1/2 items-center justify-center sm:right-[3px]"
+                className="absolute top-1/2 right-[6px] flex size-10 -translate-y-1/2 cursor-pointer items-center justify-center sm:right-[3px]"
               >
                 {showPassword ? (
-                  <>
-                    {/* Mobile: password visible → Eye Off */}
-                    <EyeOffIcon aria-hidden="true" className="size-5 sm:hidden" />
-
-                    {/* Desktop */}
-                    <EyeOffIcon aria-hidden="true" className="hidden size-5 sm:block" />
-                  </>
+                  <EyeOffIcon aria-hidden="true" className="size-5" />
                 ) : (
-                  <>
-                    {/* Mobile: password hidden → Eye On */}
-                    <EyeOnIcon aria-hidden="true" className="h-[15px] w-[22px] sm:hidden" />
-
-                    {/* Desktop */}
-                    <EyeOnIcon aria-hidden="true" className="hidden h-[15px] w-[22px] sm:block" />
-                  </>
+                  <EyeOnIcon aria-hidden="true" className="h-[15px] w-[22px]" />
                 )}
               </button>
             </div>
+
+            {errors.password && (
+              <p className="text-error text-[11px] leading-[16.5px]">{errors.password.message}</p>
+            )}
           </div>
 
           <div className="flex flex-col gap-1.5">
@@ -146,10 +187,11 @@ export function SignupForm() {
             <div className="relative">
               <Input
                 id="confirmPassword"
-                name="confirmPassword"
                 type={showConfirmPassword ? 'text' : 'password'}
                 placeholder="Repeat your password"
-                className={`${inputClassName} pr-[53px] sm:pr-12`}
+                aria-invalid={Boolean(errors.confirmPassword)}
+                className={passwordInputClassName}
+                {...register('confirmPassword')}
               />
 
               <button
@@ -157,36 +199,31 @@ export function SignupForm() {
                 onClick={() => setShowConfirmPassword((current) => !current)}
                 aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
                 aria-pressed={showConfirmPassword}
-                className="absolute top-1/2 right-[6px] flex size-10 -translate-y-1/2 items-center justify-center sm:right-[3px]"
+                className="absolute top-1/2 right-[6px] flex size-10 -translate-y-1/2 cursor-pointer items-center justify-center sm:right-[3px]"
               >
                 {showConfirmPassword ? (
-                  <>
-                    {/* Mobile: password visible → Eye Off */}
-                    <EyeOffIcon aria-hidden="true" className="size-5 sm:hidden" />
-
-                    {/* Desktop */}
-                    <EyeOffIcon aria-hidden="true" className="hidden size-5 sm:block" />
-                  </>
+                  <EyeOffIcon aria-hidden="true" className="size-5" />
                 ) : (
-                  <>
-                    {/* Mobile: password hidden → Eye On */}
-                    <EyeOnIcon aria-hidden="true" className="h-[15px] w-[22px] sm:hidden" />
-
-                    {/* Desktop */}
-                    <EyeOnIcon aria-hidden="true" className="hidden h-[15px] w-[22px] sm:block" />
-                  </>
+                  <EyeOnIcon aria-hidden="true" className="h-[15px] w-[22px]" />
                 )}
               </button>
             </div>
+
+            {errors.confirmPassword && (
+              <p className="text-error text-[11px] leading-[16.5px]">
+                {errors.confirmPassword.message}
+              </p>
+            )}
           </div>
         </div>
 
         <div className="bg-surface-icon p-md hidden flex-col gap-[7.5px] rounded-md sm:flex">
           <div className="gap-xs flex items-center">
-            <span
-              aria-hidden="true"
-              className="border-foreground-secondary size-[11.667px] rounded-full border"
-            />
+            {passwordChecks.minLength ? (
+              <ValidationPassedIcon aria-hidden="true" className="size-[11.667px] shrink-0" />
+            ) : (
+              <ValidationPendingIcon aria-hidden="true" className="size-[11.667px] shrink-0" />
+            )}
 
             <span className="text-foreground-secondary text-[11px] leading-[16.5px]">
               At least 8 characters
@@ -194,10 +231,11 @@ export function SignupForm() {
           </div>
 
           <div className="gap-xs flex items-center">
-            <span
-              aria-hidden="true"
-              className="border-foreground-secondary size-[11.667px] rounded-full border"
-            />
+            {passwordChecks.hasUpperLowerDigit ? (
+              <ValidationPassedIcon aria-hidden="true" className="size-[11.667px] shrink-0" />
+            ) : (
+              <ValidationPendingIcon aria-hidden="true" className="size-[11.667px] shrink-0" />
+            )}
 
             <span className="text-foreground-secondary text-[11px] leading-[16.5px]">
               One uppercase, lowercase, and digit
@@ -205,10 +243,11 @@ export function SignupForm() {
           </div>
 
           <div className="gap-xs flex items-center">
-            <span
-              aria-hidden="true"
-              className="border-foreground-secondary size-[11.667px] rounded-full border"
-            />
+            {passwordChecks.hasSpecialCharacter ? (
+              <ValidationPassedIcon aria-hidden="true" className="size-[11.667px] shrink-0" />
+            ) : (
+              <ValidationPendingIcon aria-hidden="true" className="size-[11.667px] shrink-0" />
+            )}
 
             <span className="text-foreground-secondary text-[11px] leading-[16.5px]">
               One special character
@@ -218,7 +257,7 @@ export function SignupForm() {
 
         <Button
           type="submit"
-          className="h-14 w-full rounded-md bg-[linear-gradient(135deg,var(--color-primary)_0%,var(--color-primary-container)_100%)] px-0 py-0 text-[16px] leading-[24px] sm:h-12"
+          className="h-14 w-full cursor-pointer rounded-md bg-[linear-gradient(135deg,var(--color-primary)_0%,var(--color-primary-container)_100%)] px-0 py-0 text-[16px] leading-[24px] sm:h-12"
         >
           Create Account
         </Button>
