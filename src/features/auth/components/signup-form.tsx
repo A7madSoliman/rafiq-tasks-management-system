@@ -18,11 +18,10 @@ const labelClassName =
 export function SignupForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
   return (
     <section
       aria-labelledby="signup-title"
-      className="sm:bg-surface sm:p-2xl w-full sm:max-w-144 sm:rounded-md sm:shadow-[0_24px_48px_rgba(4,27,60,0.06)]"
+      className="sm:bg-surface sm:p-2xl w-full sm:max-w-144 sm:overflow-hidden sm:rounded-md sm:shadow-[0_24px_48px_rgba(4,27,60,0.06)]"
     >
       <header className="pb-xl sm:pb-10">
         <div className="sm:gap-xs flex flex-col gap-[6.875px]">
@@ -97,7 +96,7 @@ export function SignupForm() {
         </div>
 
         <div className="gap-lg sm:gap-md grid grid-cols-1 sm:grid-cols-2">
-          <div className="flex flex-col gap-1.5">
+          <div className="flex h-[78.5px] flex-col gap-1.5 sm:h-auto">
             <FieldLabel htmlFor="password" className={labelClassName}>
               Password
             </FieldLabel>
@@ -108,7 +107,7 @@ export function SignupForm() {
                 name="password"
                 type={showPassword ? 'text' : 'password'}
                 placeholder="Password"
-                className={`${inputClassName} pr-12`}
+                className={`${inputClassName} h-12 py-[14px] pr-[53px] sm:pr-12`}
               />
 
               <button
@@ -116,15 +115,24 @@ export function SignupForm() {
                 onClick={() => setShowPassword((current) => !current)}
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
                 aria-pressed={showPassword}
-                className="right-md sm:right-sm absolute top-1/2 flex h-[24px] w-[24px] -translate-y-1/2 items-center justify-center sm:h-auto sm:w-auto"
+                className="absolute top-1/2 right-[6px] flex size-10 -translate-y-1/2 items-center justify-center sm:right-[3px]"
               >
                 {showPassword ? (
-                  <EyeOffIcon aria-hidden="true" className="size-icon-md cursor-pointer" />
+                  <>
+                    {/* Mobile: password visible → Eye Off */}
+                    <EyeOffIcon aria-hidden="true" className="size-5 sm:hidden" />
+
+                    {/* Desktop */}
+                    <EyeOffIcon aria-hidden="true" className="hidden size-5 sm:block" />
+                  </>
                 ) : (
-                  <EyeOnIcon
-                    aria-hidden="true"
-                    className="size-icon-md cursor-pointer sm:h-3.75 sm:w-5.5"
-                  />
+                  <>
+                    {/* Mobile: password hidden → Eye On */}
+                    <EyeOnIcon aria-hidden="true" className="h-[15px] w-[22px] sm:hidden" />
+
+                    {/* Desktop */}
+                    <EyeOnIcon aria-hidden="true" className="hidden h-[15px] w-[22px] sm:block" />
+                  </>
                 )}
               </button>
             </div>
@@ -141,7 +149,7 @@ export function SignupForm() {
                 name="confirmPassword"
                 type={showConfirmPassword ? 'text' : 'password'}
                 placeholder="Repeat your password"
-                className={`${inputClassName} pr-12`}
+                className={`${inputClassName} pr-[53px] sm:pr-12`}
               />
 
               <button
@@ -149,15 +157,24 @@ export function SignupForm() {
                 onClick={() => setShowConfirmPassword((current) => !current)}
                 aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
                 aria-pressed={showConfirmPassword}
-                className="right-md sm:right-sm absolute top-1/2 flex h-[24px] w-[24px] -translate-y-1/2 items-center justify-center sm:h-auto sm:w-auto"
+                className="absolute top-1/2 right-[6px] flex size-10 -translate-y-1/2 items-center justify-center sm:right-[3px]"
               >
                 {showConfirmPassword ? (
-                  <EyeOffIcon aria-hidden="true" className="size-icon-md cursor-pointer" />
+                  <>
+                    {/* Mobile: password visible → Eye Off */}
+                    <EyeOffIcon aria-hidden="true" className="size-5 sm:hidden" />
+
+                    {/* Desktop */}
+                    <EyeOffIcon aria-hidden="true" className="hidden size-5 sm:block" />
+                  </>
                 ) : (
-                  <EyeOnIcon
-                    aria-hidden="true"
-                    className="size-icon-md cursor-pointer sm:h-3.75 sm:w-5.5"
-                  />
+                  <>
+                    {/* Mobile: password hidden → Eye On */}
+                    <EyeOnIcon aria-hidden="true" className="h-[15px] w-[22px] sm:hidden" />
+
+                    {/* Desktop */}
+                    <EyeOnIcon aria-hidden="true" className="hidden h-[15px] w-[22px] sm:block" />
+                  </>
                 )}
               </button>
             </div>
@@ -207,7 +224,7 @@ export function SignupForm() {
         </Button>
       </form>
 
-      <div className="pb-xl sm:pt-xl pt-[47.5px] sm:pb-0">
+      <div className="mt-md pb-xl sm:pt-xl pt-[47.5px] sm:pb-0">
         <p className="text-foreground-secondary sm:text-foreground-muted text-center text-[14px] leading-[20px]">
           Already have an account?{' '}
           <Link href="/login" className="text-primary font-semibold">

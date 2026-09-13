@@ -8,13 +8,13 @@ export default function SignupPage() {
         <div className="gap-xs flex items-center">
           <TasklyMark aria-hidden="true" className="w-icon-sm h-5" />
 
-          <span className="text-foreground text-[1.25rem] leading-7 font-bold tracking-[-0.03125rem]">
+          <span className="text-foreground text-xl leading-7 font-bold tracking-[-0.5px]">
             TASKLY
           </span>
         </div>
       </header>
 
-      <main className="px-lg pt-xl sm:pt-md sm:pb-2xl relative z-10 pb-18.5 sm:flex sm:justify-center sm:px-0">
+      <main className="px-lg pt-xl sm:pt-md sm:pb-2xl relative z-10 pb-0 sm:flex sm:justify-center sm:px-0">
         <SignupForm />
       </main>
 
@@ -25,7 +25,7 @@ export default function SignupPage() {
         <div className="relative size-64">
           <div className="absolute inset-0 rounded-xl bg-[rgba(0,82,204,0.2)] blur-[50px]" />
 
-          <div className="absolute top-1/2 left-1/2 size-32 -translate-x-1/2 -translate-y-1/2 rounded-[0.75rem] border border-[rgba(0,61,155,0.1)]" />
+          <div className="absolute top-1/2 left-1/2 size-32 -translate-x-1/2 -translate-y-1/2 rounded-xl border border-[rgba(0,61,155,0.1)]" />
         </div>
       </div>
     </div>
