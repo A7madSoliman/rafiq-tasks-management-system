@@ -10,10 +10,10 @@ import { FieldLabel } from '@/components/ui/field-label';
 import { Input } from '@/components/ui/input';
 
 const inputClassName =
-  'h-14 rounded-md px-md py-[1.125rem] text-[1rem] text-foreground placeholder:text-foreground-subtle sm:h-12 sm:rounded-sm sm:py-[0.875rem]';
+  'h-14 rounded-md px-md py-[18px] text-[16px] text-foreground placeholder:text-foreground-subtle sm:h-12 sm:rounded-sm sm:py-[14px]';
 
 const labelClassName =
-  'pl-2xs text-[0.6875rem] leading-[1.03125rem] tracking-[0.034375rem] text-foreground-secondary sm:text-foreground-muted';
+  'pl-2xs text-[11px] leading-[16.5px] tracking-[0.55px] text-foreground-secondary sm:text-foreground-muted';
 
 export function SignupForm() {
   const [showPassword, setShowPassword] = useState(false);
@@ -22,13 +22,13 @@ export function SignupForm() {
   return (
     <section
       aria-labelledby="signup-title"
-      className="sm:bg-surface sm:p-2xl w-full sm:max-w-[36rem] sm:rounded-md sm:shadow-[0_24px_48px_rgba(4,27,60,0.06)]"
+      className="sm:bg-surface sm:p-2xl w-full sm:max-w-144 sm:rounded-md sm:shadow-[0_24px_48px_rgba(4,27,60,0.06)]"
     >
-      <header className="pb-xl sm:pb-[2.5rem]">
-        <div className="sm:gap-xs flex flex-col gap-[0.4296875rem]">
+      <header className="pb-xl sm:pb-10">
+        <div className="sm:gap-xs flex flex-col gap-[6.875px]">
           <h1
             id="signup-title"
-            className="text-foreground text-[1.75rem] leading-[2.5rem] font-semibold tracking-[-0.05rem] sm:text-center sm:text-[1.875rem] sm:leading-[2.25rem] sm:tracking-[-0.046875rem]"
+            className="text-foreground text-[28px] leading-10 font-semibold tracking-[-0.8px] sm:text-center sm:text-[30px] sm:leading-9 sm:tracking-[-0.75px]"
           >
             Create your workspace
           </h1>
@@ -37,7 +37,7 @@ export function SignupForm() {
             Join the curated environment for institutional trust and task precision.
           </p>
 
-          <p className="text-foreground-muted hidden text-center text-[0.875rem] leading-[1.25rem] sm:block">
+          <p className="text-foreground-muted hidden text-center text-[14px] leading-[20px] sm:block">
             Join the editorial approach to task management.
           </p>
         </div>
@@ -45,10 +45,10 @@ export function SignupForm() {
 
       <form className="gap-lg flex flex-col">
         <div>
-          <div className="flex flex-col gap-[0.375rem]">
+          <div className="flex flex-col gap-1.5">
             <FieldLabel
               htmlFor="name"
-              className="text-foreground-secondary sm:pl-2xs sm:text-foreground-muted text-[0.6875rem] leading-[1.03125rem] tracking-[0.034375rem]"
+              className="text-foreground-secondary sm:pl-2xs sm:text-foreground-muted text-[11px] leading-[16.5px] tracking-[0.55px]"
             >
               Name
             </FieldLabel>
@@ -61,12 +61,12 @@ export function SignupForm() {
             />
           </div>
 
-          <p className="text-outline sm:pl-2xs mt-[0.375rem] text-[0.6875rem] leading-[1.03125rem]">
+          <p className="text-outline sm:pl-2xs mt-1.5 text-[11px] leading-[16.5px]">
             3-50 characters, letters only.
           </p>
         </div>
 
-        <div className="flex flex-col gap-[0.375rem]">
+        <div className="flex flex-col gap-1.5">
           <FieldLabel htmlFor="email" className={labelClassName}>
             Email
           </FieldLabel>
@@ -80,7 +80,7 @@ export function SignupForm() {
           />
         </div>
 
-        <div className="flex flex-col gap-[0.375rem]">
+        <div className="flex flex-col gap-1.5">
           <FieldLabel htmlFor="jobTitle" className={labelClassName}>
             Job Title{' '}
             <span className="text-foreground-subtle hidden font-normal tracking-normal normal-case sm:inline">
@@ -97,7 +97,7 @@ export function SignupForm() {
         </div>
 
         <div className="gap-lg sm:gap-md grid grid-cols-1 sm:grid-cols-2">
-          <div className="flex flex-col gap-[0.375rem]">
+          <div className="flex flex-col gap-1.5">
             <FieldLabel htmlFor="password" className={labelClassName}>
               Password
             </FieldLabel>
@@ -116,21 +116,21 @@ export function SignupForm() {
                 onClick={() => setShowPassword((current) => !current)}
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
                 aria-pressed={showPassword}
-                className="right-md sm:right-sm absolute top-1/2 flex -translate-y-1/2 items-center justify-center"
+                className="right-md sm:right-sm absolute top-1/2 flex h-[24px] w-[24px] -translate-y-1/2 items-center justify-center sm:h-auto sm:w-auto"
               >
                 {showPassword ? (
                   <EyeOffIcon aria-hidden="true" className="size-icon-md cursor-pointer" />
                 ) : (
                   <EyeOnIcon
                     aria-hidden="true"
-                    className="size-icon-md cursor-pointer sm:h-[0.9375rem] sm:w-[1.375rem]"
+                    className="size-icon-md cursor-pointer sm:h-3.75 sm:w-5.5"
                   />
                 )}
               </button>
             </div>
           </div>
 
-          <div className="flex flex-col gap-[0.375rem]">
+          <div className="flex flex-col gap-1.5">
             <FieldLabel htmlFor="confirmPassword" className={labelClassName}>
               Confirm Password
             </FieldLabel>
@@ -149,14 +149,14 @@ export function SignupForm() {
                 onClick={() => setShowConfirmPassword((current) => !current)}
                 aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
                 aria-pressed={showConfirmPassword}
-                className="right-md sm:right-sm absolute top-1/2 flex -translate-y-1/2 items-center justify-center"
+                className="right-md sm:right-sm absolute top-1/2 flex h-[24px] w-[24px] -translate-y-1/2 items-center justify-center sm:h-auto sm:w-auto"
               >
                 {showConfirmPassword ? (
                   <EyeOffIcon aria-hidden="true" className="size-icon-md cursor-pointer" />
                 ) : (
                   <EyeOnIcon
                     aria-hidden="true"
-                    className="size-icon-md cursor-pointer sm:h-[0.9375rem] sm:w-[1.375rem]"
+                    className="size-icon-md cursor-pointer sm:h-3.75 sm:w-5.5"
                   />
                 )}
               </button>
@@ -164,14 +164,14 @@ export function SignupForm() {
           </div>
         </div>
 
-        <div className="bg-surface-icon p-md hidden flex-col gap-[0.46875rem] rounded-md sm:flex">
+        <div className="bg-surface-icon p-md hidden flex-col gap-[7.5px] rounded-md sm:flex">
           <div className="gap-xs flex items-center">
             <span
               aria-hidden="true"
-              className="border-foreground-secondary size-[0.7291875rem] rounded-full border"
+              className="border-foreground-secondary size-[11.667px] rounded-full border"
             />
 
-            <span className="text-foreground-secondary text-[0.6875rem] leading-[1.03125rem]">
+            <span className="text-foreground-secondary text-[11px] leading-[16.5px]">
               At least 8 characters
             </span>
           </div>
@@ -179,10 +179,10 @@ export function SignupForm() {
           <div className="gap-xs flex items-center">
             <span
               aria-hidden="true"
-              className="border-foreground-secondary size-[0.7291875rem] rounded-full border"
+              className="border-foreground-secondary size-[11.667px] rounded-full border"
             />
 
-            <span className="text-foreground-secondary text-[0.6875rem] leading-[1.03125rem]">
+            <span className="text-foreground-secondary text-[11px] leading-[16.5px]">
               One uppercase, lowercase, and digit
             </span>
           </div>
@@ -190,10 +190,10 @@ export function SignupForm() {
           <div className="gap-xs flex items-center">
             <span
               aria-hidden="true"
-              className="border-foreground-secondary size-[0.7291875rem] rounded-full border"
+              className="border-foreground-secondary size-[11.667px] rounded-full border"
             />
 
-            <span className="text-foreground-secondary text-[0.6875rem] leading-[1.03125rem]">
+            <span className="text-foreground-secondary text-[11px] leading-[16.5px]">
               One special character
             </span>
           </div>
@@ -201,14 +201,14 @@ export function SignupForm() {
 
         <Button
           type="submit"
-          className="h-14 w-full rounded-md bg-[linear-gradient(135deg,var(--color-primary)_0%,var(--color-primary-container)_100%)] px-0 py-0 text-[1rem] leading-[1.5rem] sm:h-12"
+          className="h-14 w-full rounded-md bg-[linear-gradient(135deg,var(--color-primary)_0%,var(--color-primary-container)_100%)] px-0 py-0 text-[16px] leading-[24px] sm:h-12"
         >
           Create Account
         </Button>
       </form>
 
-      <div className="pb-xl sm:pt-xl pt-[2.96875rem] sm:pb-0">
-        <p className="text-foreground-secondary sm:text-foreground-muted text-center text-[0.875rem] leading-[1.25rem]">
+      <div className="pb-xl sm:pt-xl pt-[47.5px] sm:pb-0">
+        <p className="text-foreground-secondary sm:text-foreground-muted text-center text-[14px] leading-[20px]">
           Already have an account?{' '}
           <Link href="/login" className="text-primary font-semibold">
             Log in
