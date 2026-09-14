@@ -8,6 +8,9 @@ import EyeOnIcon from '@/assets/icons/eye-on.svg';
 import { Button } from '@/components/ui/button';
 import { FieldLabel } from '@/components/ui/field-label';
 import { Input } from '@/components/ui/input';
+import { useForm } from 'react-hook-form';
+import { LoginFormValues, loginSchema } from '../schemas/login-schema';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 const inputClassName =
   'h-14 rounded-md bg-surface-highest px-md py-[18px] text-[16px] text-foreground placeholder:text-foreground-subtle sm:h-12 sm:rounded-xs sm:py-[14px]';
@@ -17,6 +20,21 @@ const labelClassName =
 
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    mode: 'onTouched',
+    reValidateMode: 'onChange',
+    defaultValues: {
+      email: '',
+      password: '',
+      rememberMe: false,
+    },
+  });
 
   return (
     <section
@@ -37,7 +55,7 @@ export function LoginForm() {
       </header>
 
       <div className="pb-md sm:mt-10 sm:pb-0">
-        <form className="gap-lg flex flex-col" onSubmit={(event) => event.preventDefault()}>
+        <form className="gap-lg flex flex-col" onSubmit={handleSubmit(() => undefined)}>
           <div className="gap-xs flex flex-col">
             <FieldLabel htmlFor="email" className={labelClassName}>
               Email
@@ -48,7 +66,12 @@ export function LoginForm() {
               type="email"
               placeholder="yourname@company.com"
               className={inputClassName}
+              aria-invalid={Boolean(errors.email)}
+              {...register('email')}
             />
+            {errors.email && (
+              <p className="text-error text-[11px] leading-[16.5px]">{errors.email.message}</p>
+            )}
           </div>
 
           <div className="gap-xs flex flex-col">
@@ -61,7 +84,7 @@ export function LoginForm() {
                 type="button"
                 className="text-primary text-[11px] leading-[16.5px] font-bold sm:hidden"
               >
-                Forget?
+                Forgot?
               </button>
             </div>
 
@@ -70,7 +93,9 @@ export function LoginForm() {
                 id="password"
                 type={showPassword ? 'text' : 'password'}
                 placeholder="Enter your password"
+                aria-invalid={Boolean(errors.password)}
                 className={`${inputClassName} pr-[53px]`}
+                {...register('password')}
               />
 
               <button
@@ -81,12 +106,18 @@ export function LoginForm() {
                 className="absolute top-1/2 right-[2px] flex size-10 -translate-y-1/2 items-center justify-center sm:right-[7px]"
               >
                 {showPassword ? (
-                  <EyeOffIcon aria-hidden="true" className="size-5 cursor-pointer" />
+                  <EyeOffIcon aria-hidden="true" className="size-5" />
                 ) : (
-                  <EyeOnIcon aria-hidden="true" className="h-[15px] w-[22px] cursor-pointer" />
+                  <EyeOnIcon aria-hidden="true" className="h-[15px] w-[22px]" />
                 )}
               </button>
             </div>
+
+            {errors.password && (
+              <p className="text-error mt-1 text-[11px] leading-[16.5px]">
+                {errors.password.message}
+              </p>
+            )}
           </div>
 
           <div className="px-2xs pb-xs sm:py-xs flex h-7 items-start sm:h-9 sm:items-center sm:justify-between sm:px-0">
@@ -95,6 +126,7 @@ export function LoginForm() {
                 id="rememberMe"
                 type="checkbox"
                 className="accent-primary size-5 shrink-0 sm:size-4"
+                {...register('rememberMe')}
               />
 
               <span className="text-foreground-secondary text-[14px] leading-5 font-medium">
