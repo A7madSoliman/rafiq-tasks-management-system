@@ -13,6 +13,8 @@ import { FieldLabel } from '@/components/ui/field-label';
 import { Input } from '@/components/ui/input';
 import { signupSchema, type SignupFormValues } from '@/features/auth/schemas/signup-schema';
 import { getPasswordChecks } from '../validation/password-rules';
+import { useRouter } from 'next/navigation';
+import { SignupErrorResponse } from '../types/signup-api';
 
 const inputClassName =
   'h-14 rounded-md px-md py-[18px] text-[15px] text-foreground placeholder:text-foreground-subtle sm:h-12 sm:rounded-sm sm:py-[14px]';
@@ -22,15 +24,52 @@ const passwordInputClassName = `${inputClassName} pr-[53px] sm:pr-12`;
 const labelClassName =
   'pl-2xs text-[11px] leading-[16.5px] tracking-[0.55px] text-foreground-secondary sm:text-foreground-muted';
 
+function isSignupErrorResponse(value: unknown): value is SignupErrorResponse {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'message' in value &&
+    typeof value.message === 'string'
+  );
+}
+
 export function SignupForm() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const onSubmit = async (values: SignupFormValues) => {
+    setSubmitError(null);
+
+    try {
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Context-Type': 'application/json',
+        },
+        body: JSON.stringify(values),
+      });
+
+      const data: unknown = await response.json().catch(() => null);
+      if (!response.ok) {
+        setSubmitError(
+          isSignupErrorResponse(data) ? data.message : 'Something went wrong. Please try again.',
+        );
+        return;
+      }
+
+      router.replace('/login');
+    } catch {
+      setSubmitError('Unable to connect. Please try again.');
+    }
+  };
 
   const {
     register,
     handleSubmit,
     control,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
     mode: 'onTouched',
@@ -76,7 +115,7 @@ export function SignupForm() {
         </div>
       </header>
 
-      <form noValidate className="gap-lg flex flex-col" onSubmit={handleSubmit(() => undefined)}>
+      <form noValidate className="gap-lg flex flex-col" onSubmit={handleSubmit(onSubmit)}>
         <div>
           <div className="flex flex-col gap-1.5">
             <FieldLabel
@@ -255,11 +294,17 @@ export function SignupForm() {
           </div>
         </div>
 
+        {submitError && (
+          <p role="alert" className="text-error text-[12px] leading-[18px]">
+            {submitError}
+          </p>
+        )}
         <Button
           type="submit"
+          disabled={isSubmitting}
           className="h-14 w-full cursor-pointer rounded-md bg-[linear-gradient(135deg,var(--color-primary)_0%,var(--color-primary-container)_100%)] px-0 py-0 text-[16px] leading-[24px] sm:h-12"
         >
-          Create Account
+          {isSubmitting ? 'Creating Account...' : 'Create Account'}
         </Button>
       </form>
 
