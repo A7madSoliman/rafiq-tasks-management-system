@@ -1,4 +1,5 @@
 import { signupSchema } from '@/features/auth/schemas/signup-schema';
+import { SignupErrorResponse, SignupSuccessResponse } from '@/features/auth/types/signup-api';
 import { NextResponse } from 'next/server';
 
 type SupabaseSignupPayload = {
@@ -59,22 +60,30 @@ export async function POST(request: Request) {
   });
 
   if (!response.ok) {
-    return NextResponse.json(
-      {
-        message: 'Unable to create account.',
-      },
-      {
-        status: response.status,
-      },
-    );
+    const errorData: unknown = await response.json().catch(() => null);
+
+    const isDuplicateEmail =
+      typeof errorData === 'object' &&
+      errorData !== null &&
+      'error_code' in errorData &&
+      errorData.error_code === 'user_already_exists';
+
+    const errorResponse: SignupErrorResponse = {
+      message: isDuplicateEmail
+        ? 'An account with this email already exists.'
+        : 'Unable to create account.',
+    };
+
+    return NextResponse.json(errorResponse, {
+      status: isDuplicateEmail ? 409 : response.status,
+    });
   }
 
-  return NextResponse.json(
-    {
-      message: 'Account created successfully.',
-    },
-    {
-      status: 201,
-    },
-  );
+  const successResponse: SignupSuccessResponse = {
+    message: 'Account created successfully.',
+  };
+
+  return NextResponse.json(successResponse, {
+    status: 201,
+  });
 }
