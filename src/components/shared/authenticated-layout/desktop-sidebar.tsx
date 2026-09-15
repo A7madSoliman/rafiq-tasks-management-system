@@ -12,9 +12,16 @@ import { ActiveProjectNavigation } from './active-project-navigation';
 type DesktopSidebarProps = {
   isCollapsed: boolean;
   onToggleCollapse: () => void;
+  onLogout: () => Promise<void>;
+  isLoggingOut: boolean;
 };
 
-export function DesktopSidebar({ isCollapsed, onToggleCollapse }: DesktopSidebarProps) {
+export function DesktopSidebar({
+  isCollapsed,
+  onToggleCollapse,
+  onLogout,
+  isLoggingOut,
+}: DesktopSidebarProps) {
   const pathname = usePathname();
 
   return (
@@ -95,15 +102,21 @@ export function DesktopSidebar({ isCollapsed, onToggleCollapse }: DesktopSidebar
 
         <button
           type="button"
-          aria-label={isCollapsed ? 'Logout' : undefined}
+          onClick={() => void onLogout()}
+          disabled={isLoggingOut}
+          aria-label={isCollapsed ? (isLoggingOut ? 'Logging out...' : 'Logout') : undefined}
           className={cn(
-            'text-error flex h-10 items-center text-sm leading-5 font-medium',
+            'text-error flex h-10 cursor-pointer items-center text-sm leading-5 font-medium',
             isCollapsed ? 'mx-auto w-10 justify-center' : 'w-full gap-3 px-3',
+            isLoggingOut && 'cursor-not-allowed opacity-60',
           )}
         >
-          <LogoutIcon aria-hidden="true" className="size-[18px] shrink-0" />
+          <LogoutIcon
+            aria-hidden="true"
+            className={cn('size-[18px] shrink-0', isLoggingOut && 'animate-pulse')}
+          />
 
-          {!isCollapsed && <span>Logout</span>}
+          {!isCollapsed && <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>}
         </button>
       </div>
     </aside>
