@@ -1,4 +1,4 @@
-import { AuthenticatedShell } from '@/components/ui/shared/authenticated-shell';
+import { AuthenticatedShell } from '@/components/shared/authenticated-layout/authenticated-shell';
 import { getAuthState } from '@/lib/auth/session';
 import type { ReactNode } from 'react';
 

@@ -1,11 +1,16 @@
+import ProjectsIcon from '@/assets/icons/navigation/projects.svg';
+import StatisticsIcon from '@/assets/icons/navigation/statistics.svg';
+
 export const mainNavigation = [
   {
     label: 'Projects',
     href: '/project',
+    icon: ProjectsIcon,
   },
   {
     label: 'My Statistics',
     href: '/statistics',
+    icon: StatisticsIcon,
   },
 ] as const;
 

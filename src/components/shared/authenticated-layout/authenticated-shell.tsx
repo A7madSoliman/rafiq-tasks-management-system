@@ -1,8 +1,9 @@
 'use client';
 
+import { Navbar } from '@/components/shared/authenticated-layout/navbar';
 import { AuthenticatedUser } from '@/features/auth/types/authenticated-user';
 import { ReactNode, useState } from 'react';
-import { Navbar } from './authenticated-layout/navbar';
+import { DesktopSidebar } from './desktop-sidebar';
 
 type AuthenticatedShellProps = {
   children: ReactNode;
@@ -14,23 +15,12 @@ export function AuthenticatedShell({ children, user }: AuthenticatedShellProps) 
 
   return (
     <div className="flex min-h-dvh">
-      <aside
-        className={`hidden shrink-0 transition-[width] duration-300 ease-in-out lg:flex lg:flex-col ${
-          isSidebarCollapsed ? 'w-20' : 'w-64'
-        }`}
-      >
-        <button
-          type="button"
-          className="mt-auto"
-          onClick={() => setIsSidebarCollapsed((cur) => !cur)}
-        >
-          {isSidebarCollapsed ? ' Expand' : 'Collapse'}
-        </button>
-      </aside>
+      <DesktopSidebar
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapse={() => setIsSidebarCollapsed((current) => !current)}
+      />
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="h-16 shrink-0">
-          <Navbar user={user} />
-        </header>
+        <Navbar user={user} />
         <main className="min-w-0 flex-1">{children}</main>
       </div>
     </div>
