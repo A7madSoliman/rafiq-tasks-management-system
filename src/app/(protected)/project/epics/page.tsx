@@ -1,3 +1,3 @@
 export default function EpicsPage() {
-  return <div className="">Epics</div>;
+  return <h1>Epics</h1>;
 }

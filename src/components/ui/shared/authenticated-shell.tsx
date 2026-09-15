@@ -2,7 +2,7 @@
 
 import { AuthenticatedUser } from '@/features/auth/types/authenticated-user';
 import { ReactNode, useState } from 'react';
-import { Navbar } from './navbar';
+import { Navbar } from './authenticated-layout/navbar';
 
 type AuthenticatedShellProps = {
   children: ReactNode;
