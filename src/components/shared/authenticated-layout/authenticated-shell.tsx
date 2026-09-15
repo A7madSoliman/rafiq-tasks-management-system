@@ -5,6 +5,7 @@ import { ReactNode, useState } from 'react';
 import { DesktopSidebar } from './desktop-sidebar';
 import { Navbar } from './navbar';
 import { MobileDrawer } from './mobile-drawer';
+import { MobileBottomNavigation } from './mobile-bottom-navigation';
 
 type AuthenticatedShellProps = {
   children: ReactNode;
@@ -24,7 +25,8 @@ export function AuthenticatedShell({ children, user }: AuthenticatedShellProps) 
       <div className="flex min-w-0 flex-1 flex-col">
         <Navbar user={user} onOpenMobileMenu={() => setIsMobileDrawerOpen(true)} />
         <MobileDrawer isOpen={isMobileDrawerOpen} onClose={() => setIsMobileDrawerOpen(false)} />
-        <main className="min-w-0 flex-1">{children}</main>
+        <main className="min-w-0 flex-1 pb-16 lg:pb-0">{children}</main>
+        <MobileBottomNavigation />
       </div>
     </div>
   );

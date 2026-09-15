@@ -40,3 +40,31 @@ export const activeProjectNavigation = [
     icon: DetailsIcon,
   },
 ] as const;
+
+export const mobileNavigation = [
+  {
+    label: 'Epics',
+    href: '/project/epics',
+    icon: EpicsIcon,
+  },
+  {
+    label: 'Tasks',
+    href: '/project/tasks',
+    icon: TasksIcon,
+  },
+  {
+    label: 'Projects',
+    href: '/project',
+    icon: ProjectsIcon,
+  },
+  {
+    label: 'Members',
+    href: '/project/members',
+    icon: MembersIcon,
+  },
+  {
+    label: 'Details',
+    href: '/project/details',
+    icon: DetailsIcon,
+  },
+] as const;
