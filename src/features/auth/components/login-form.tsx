@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
 import { LoginFormValues, loginSchema } from '../schemas/login-schema';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useRouter } from 'next/navigation';
 
 const inputClassName =
   'h-14 rounded-md bg-surface-highest px-md py-[18px] text-[16px] text-foreground placeholder:text-foreground-subtle sm:h-12 sm:rounded-xs sm:py-[14px]';
@@ -19,12 +20,47 @@ const labelClassName =
   'pl-2xs text-[11px] leading-[16.5px] font-bold tracking-[0.55px] text-foreground-secondary uppercase sm:pl-0 sm:text-foreground-muted';
 
 export function LoginForm() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const onSubmit = async (values: LoginFormValues) => {
+    setSubmitError(null);
+
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(values),
+      });
+
+      const data: unknown = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        const message =
+          typeof data === 'object' &&
+          data !== null &&
+          'message' in data &&
+          typeof data.message === 'string'
+            ? data.message
+            : 'Unable to log in. Please try again.';
+
+        setSubmitError(message);
+        return;
+      }
+
+      router.replace('/project');
+    } catch {
+      setSubmitError('Unable to connect. Please try again.');
+    }
+  };
 
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     mode: 'onTouched',
@@ -39,7 +75,7 @@ export function LoginForm() {
   return (
     <section
       aria-labelledby="login-title"
-      className="sm:bg-surface sm:p-2xl w-full sm:h-[586px] sm:w-[480px] sm:rounded-md sm:shadow-[0_24px_24px_rgba(4,27,60,0.06)]"
+      className="sm:bg-surface sm:p-2xl w-full sm:min-h-[586px] sm:w-[480px] sm:rounded-md sm:shadow-[0_24px_24px_rgba(4,27,60,0.06)]"
     >
       <header className="mx-auto flex h-[188px] w-[232.14px] flex-col items-center pt-[88px] text-center sm:h-16 sm:w-full sm:pt-0">
         <h1
@@ -55,7 +91,7 @@ export function LoginForm() {
       </header>
 
       <div className="pb-md sm:mt-10 sm:pb-0">
-        <form className="gap-lg flex flex-col" onSubmit={handleSubmit(() => undefined)}>
+        <form className="gap-lg flex flex-col" onSubmit={handleSubmit(onSubmit)}>
           <div className="gap-xs flex flex-col">
             <FieldLabel htmlFor="email" className={labelClassName}>
               Email
@@ -106,9 +142,9 @@ export function LoginForm() {
                 className="absolute top-1/2 right-[2px] flex size-10 -translate-y-1/2 items-center justify-center sm:right-[7px]"
               >
                 {showPassword ? (
-                  <EyeOffIcon aria-hidden="true" className="size-5" />
+                  <EyeOffIcon aria-hidden="true" className="size-5 cursor-pointer" />
                 ) : (
-                  <EyeOnIcon aria-hidden="true" className="h-[15px] w-[22px]" />
+                  <EyeOnIcon aria-hidden="true" className="h-[15px] w-[22px] cursor-pointer" />
                 )}
               </button>
             </div>
@@ -141,12 +177,17 @@ export function LoginForm() {
               Forget Password?
             </button>
           </div>
-
+          {submitError && (
+            <p role="alert" className="text-error text-[12px] leading-[18px]">
+              {submitError}
+            </p>
+          )}
           <Button
             type="submit"
+            disabled={isSubmitting}
             className="h-14 w-full cursor-pointer rounded-md bg-[linear-gradient(135deg,var(--color-primary)_0%,var(--color-primary-container)_100%)] px-0 py-0 text-[16px] leading-6 font-semibold shadow-[0_10px_15px_-3px_rgba(0,61,155,0.1),0_4px_6px_-4px_rgba(0,61,155,0.1)] sm:h-12 sm:shadow-[0_1px_1px_rgba(0,0,0,0.05)]"
           >
-            Log In
+            {isSubmitting ? 'Logging in...' : 'Log In'}
           </Button>
         </form>
       </div>
