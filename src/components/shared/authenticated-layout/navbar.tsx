@@ -8,7 +8,11 @@ type NavbarProps = {
 };
 
 export function Navbar({ user, onOpenMobileMenu }: NavbarProps) {
-  const initials = getUserInitials(user?.name ?? null);
+  const displayName = user?.name ?? user?.email ?? 'User';
+
+  const initialsSource = user?.name ?? user?.email?.split('@')[0] ?? null;
+
+  const initials = getUserInitials(initialsSource);
 
   return (
     <header className="bg-background sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b border-black/10 px-6">
@@ -31,7 +35,7 @@ export function Navbar({ user, onOpenMobileMenu }: NavbarProps) {
         <div className="border-outline/30 flex items-center gap-3 border-l pl-[17px]">
           <div className="hidden min-w-0 flex-col items-end lg:flex">
             <p className="text-foreground max-w-[180px] truncate text-sm leading-5 font-semibold">
-              {user?.name ?? '—'}
+              {displayName}
             </p>
 
             <p className="text-primary max-w-[180px] truncate text-[10px] leading-5 font-bold tracking-[1px] uppercase">
