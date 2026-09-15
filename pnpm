@@ -1,4 +1,0 @@
-error TS6231: Could not resolve the path 'dev' with the extensions: '.ts', '.tsx', '.d.ts', '.cts', '.d.cts', '.mts', '.d.mts'.
-  The file is in the program because:
-    Root file specified for compilation
-[ELIFECYCLE] Command failed with exit code 2.
