@@ -10,11 +10,12 @@ import { cn } from '@/lib/cn';
 
 type ActiveProjectNavigationProps = {
   isCollapsed: boolean;
+  onNavigate?: () => void;
 };
 
 const ACTIVE_PROJECT_NAME = 'Active Project Name';
 
-export function ActiveProjectNavigation({ isCollapsed }: ActiveProjectNavigationProps) {
+export function ActiveProjectNavigation({ isCollapsed, onNavigate }: ActiveProjectNavigationProps) {
   const pathname = usePathname();
 
   const [isAccordionOpen, setIsAccordionOpen] = useState(true);
@@ -58,7 +59,10 @@ export function ActiveProjectNavigation({ isCollapsed }: ActiveProjectNavigation
           aria-label="Open active project navigation"
           aria-expanded={isPopupOpen}
           aria-controls="active-project-popup"
-          onClick={() => setIsPopupOpen((current) => !current)}
+          onClick={() => {
+            setIsPopupOpen(false);
+            onNavigate?.();
+          }}
           className={cn(
             'mx-auto flex size-10 cursor-pointer items-center justify-center rounded-sm transition-colors duration-200',
             isPopupOpen && 'bg-surface',
@@ -90,7 +94,7 @@ export function ActiveProjectNavigation({ isCollapsed }: ActiveProjectNavigation
                 key={item.href}
                 href={item.href}
                 aria-current={isActive ? 'page' : undefined}
-                onClick={() => setIsPopupOpen(false)}
+                onClick={onNavigate}
                 className={cn(
                   'text-foreground flex h-10 items-center gap-3 px-3 text-sm font-medium',
                   isActive && 'bg-surface-low rounded-full',
