@@ -1,9 +1,6 @@
+import { AuthenticatedUser } from '@/features/auth/types/authenticated-user';
+import { mapSupabaseUser } from '@/features/auth/utils/map-supabase-user';
 import { cookies } from 'next/headers';
-
-type SupabaseUser = {
-  id: string;
-  email?: string;
-};
 
 export async function getSession() {
   const cookieStore = await cookies();
@@ -19,7 +16,7 @@ export async function getSession() {
   };
 }
 
-export async function verifyAccessToken(accessToken: string): Promise<SupabaseUser | null> {
+export async function verifyAccessToken(accessToken: string): Promise<AuthenticatedUser | null> {
   const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY;
 
@@ -46,13 +43,13 @@ export async function verifyAccessToken(accessToken: string): Promise<SupabaseUs
     return null;
   }
 
-  return data as SupabaseUser;
+  return mapSupabaseUser(data);
 }
 
 export type AuthState =
   | {
       status: 'authenticated';
-      user: SupabaseUser;
+      user: AuthenticatedUser;
     }
   | {
       status: 'refreshable';

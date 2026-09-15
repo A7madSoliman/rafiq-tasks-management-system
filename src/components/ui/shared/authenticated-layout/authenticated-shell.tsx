@@ -1,12 +1,15 @@
 'use client';
 
+import { AuthenticatedUser } from '@/features/auth/types/authenticated-user';
 import { ReactNode, useState } from 'react';
+import { Navbar } from './navbar';
 
 type AuthenticatedShellProps = {
   children: ReactNode;
+  user: AuthenticatedUser | null;
 };
 
-export function AuthenticatedShell({ children }: AuthenticatedShellProps) {
+export function AuthenticatedShell({ children, user }: AuthenticatedShellProps) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   return (
@@ -25,7 +28,9 @@ export function AuthenticatedShell({ children }: AuthenticatedShellProps) {
         </button>
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="h-16 shrink-0">Navbar</header>
+        <header className="h-16 shrink-0">
+          <Navbar user={user} />
+        </header>
         <main className="min-w-0 flex-1">{children}</main>
       </div>
     </div>
