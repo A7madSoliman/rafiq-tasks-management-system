@@ -2,12 +2,12 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-
 import CollapseIcon from '@/assets/icons/navigation/collapse.svg';
 import LogoutIcon from '@/assets/icons/navigation/logout.svg';
 import TasklyMark from '@/assets/icons/taskly-mark.svg';
 import { mainNavigation } from '@/config/navigation';
 import { cn } from '@/lib/cn';
+import { ActiveProjectNavigation } from './active-project-navigation';
 
 type DesktopSidebarProps = {
   isCollapsed: boolean;
@@ -65,6 +65,11 @@ export function DesktopSidebar({ isCollapsed, onToggleCollapse }: DesktopSidebar
             </Link>
           );
         })}
+
+        <ActiveProjectNavigation
+          key={isCollapsed ? 'collapsed' : 'expanded'}
+          isCollapsed={isCollapsed}
+        />
       </nav>
 
       <div className="border-outline/20 flex flex-col gap-1 border-t pt-[25px]">
