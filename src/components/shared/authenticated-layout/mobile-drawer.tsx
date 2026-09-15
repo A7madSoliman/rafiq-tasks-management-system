@@ -15,9 +15,11 @@ import { useEffect } from 'react';
 type MobileDrawerProps = {
   isOpen: boolean;
   onClose: () => void;
+  onLogout: () => Promise<void>;
+  isLoggingOut: boolean;
 };
 
-export function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
+export function MobileDrawer({ isOpen, onClose, onLogout, isLoggingOut }: MobileDrawerProps) {
   const pathname = usePathname();
 
   useEffect(() => {
@@ -118,11 +120,19 @@ export function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
         <div className="border-outline/20 border-t pt-[25px]">
           <button
             type="button"
-            className="text-error flex h-10 w-full items-center gap-3 px-3 text-sm font-medium"
+            onClick={() => void onLogout()}
+            disabled={isLoggingOut}
+            className={cn(
+              'text-error flex h-10 w-full cursor-pointer items-center gap-3 px-3 text-sm font-medium',
+              isLoggingOut && 'cursor-not-allowed opacity-60',
+            )}
           >
-            <LogoutIcon aria-hidden="true" className="size-[18px]" />
+            <LogoutIcon
+              aria-hidden="true"
+              className={cn('size-[18px] shrink-0', isLoggingOut && 'animate-pulse')}
+            />
 
-            <span>Logout</span>
+            <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
           </button>
         </div>
       </aside>
