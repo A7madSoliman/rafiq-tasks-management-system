@@ -61,7 +61,7 @@ export function CreateProjectForm() {
       </header>
 
       <div className="lg:mt-10 lg:flex lg:justify-center">
-        <section className="lg:bg-surface w-full max-w-[512px] lg:max-w-[672px] lg:overflow-hidden lg:rounded-md lg:shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
+        <section className="lg:bg-surface mx-auto w-full max-w-[512px] lg:max-w-[672px] lg:overflow-hidden lg:rounded-md lg:shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
           <header className="lg:border-surface-low pb-8 lg:border-b lg:px-8 lg:pt-8 lg:pb-[41px]">
             <div className="flex items-center gap-4">
               <InitializeProjectIcon
