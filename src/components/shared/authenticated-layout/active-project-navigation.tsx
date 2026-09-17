@@ -60,8 +60,7 @@ export function ActiveProjectNavigation({ isCollapsed, onNavigate }: ActiveProje
           aria-expanded={isPopupOpen}
           aria-controls="active-project-popup"
           onClick={() => {
-            setIsPopupOpen(false);
-            onNavigate?.();
+            setIsPopupOpen((current) => !current);
           }}
           className={cn(
             'mx-auto flex size-10 cursor-pointer items-center justify-center rounded-sm transition-colors duration-200',
