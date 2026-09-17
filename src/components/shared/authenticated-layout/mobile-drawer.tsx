@@ -2,11 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+
 import CloseIcon from '@/assets/icons/navigation/close.svg';
 import LogoutIcon from '@/assets/icons/navigation/logout.svg';
 import TasklyMark from '@/assets/icons/taskly-mark.svg';
 import { mainNavigation } from '@/config/navigation';
 import { cn } from '@/lib/cn';
+
 import { ActiveProjectNavigation } from './active-project-navigation';
 import { useEffect } from 'react';
 
