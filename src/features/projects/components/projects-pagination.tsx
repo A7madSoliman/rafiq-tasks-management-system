@@ -6,10 +6,7 @@ const paginationItems = [1, 2, 3, 'ellipsis', 15] as const;
 
 export function ProjectsPagination() {
   return (
-    <nav
-      aria-label="Projects pagination"
-      className="flex w-full justify-center px-6 py-8 lg:justify-end lg:px-8"
-    >
+    <nav aria-label="Projects pagination" className="hidden w-full justify-end p-8 lg:flex">
       <div className="flex items-center gap-2">
         <button
           type="button"

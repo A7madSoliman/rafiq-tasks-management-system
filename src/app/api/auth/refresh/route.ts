@@ -35,8 +35,8 @@ export async function POST() {
   const response = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=refresh_token`, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
       apikey: supabaseSecretKey,
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify({
       refresh_token: refreshToken,

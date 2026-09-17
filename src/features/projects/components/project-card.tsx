@@ -3,7 +3,6 @@ import Link from 'next/link';
 import EpicsIcon from '@/assets/icons/navigation/epics.svg';
 import MembersIcon from '@/assets/icons/navigation/members.svg';
 import TasksIcon from '@/assets/icons/navigation/tasks.svg';
-
 import type { Project } from '../types/project';
 import { formatProjectDate } from '../utils/format-project-date';
 
