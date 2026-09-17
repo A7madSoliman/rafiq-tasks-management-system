@@ -13,7 +13,6 @@ export function useProjects() {
 
   const loadProjects = useCallback(
     async (signal?: AbortSignal) => {
-      setStatus('loading');
       try {
         const response = await fetch('/api/projects', {
           method: 'GET',
@@ -52,6 +51,7 @@ export function useProjects() {
 
   useEffect(() => {
     const controller = new AbortController();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadProjects(controller.signal);
 
     return () => {
@@ -60,6 +60,7 @@ export function useProjects() {
   }, [loadProjects]);
 
   function retry() {
+    setStatus('loading');
     void loadProjects();
   }
   return {
