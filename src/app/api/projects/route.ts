@@ -14,7 +14,7 @@ export async function GET() {
   const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY;
 
   if (!supabaseUrl || !supabaseSecretKey) {
-    return NextResponse.json({ message: ' Server configuration error.' }, { status: 500 });
+    return NextResponse.json({ message: 'Server configuration error.' }, { status: 500 });
   }
 
   const response = await fetch(`${supabaseUrl}/rest/v1/rpc/get_projects`, {

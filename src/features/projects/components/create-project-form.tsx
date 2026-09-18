@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import FormErrorIcon from '@/assets/icons/projects/create/form-error.svg';
 import InitializeProjectIcon from '@/assets/icons/projects/create/initialize-project.svg';
 import ProTipIcon from '@/assets/icons/projects/create/pro-tip.svg';
@@ -15,16 +15,23 @@ import {
   createProjectSchema,
   type CreateProjectFormValues,
 } from '../schemas/create-project-schema';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { toast } from 'sonner';
 
 const descriptionPlaceholder =
   "Provide a high-level overview of the project's architectural objectives and key milestones...";
 
 export function CreateProjectForm() {
+  const router = useRouter();
+  const [serverError, setServerError] = useState<string | null>(null);
+
   const {
     register,
     handleSubmit,
-    watch,
-    formState: { errors },
+    control,
+    reset,
+    formState: { errors, isSubmitting },
   } = useForm<CreateProjectFormValues>({
     resolver: zodResolver(createProjectSchema),
     defaultValues: {
@@ -33,9 +40,51 @@ export function CreateProjectForm() {
     },
   });
 
-  const description = watch('description') ?? '';
+  const description =
+    useWatch({
+      control,
+      name: 'description',
+    }) ?? '';
 
-  function onSubmit() {}
+  async function onSubmit(values: CreateProjectFormValues) {
+    setServerError(null);
+
+    try {
+      const response = await fetch('/api/projects', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(values),
+      });
+
+      if (response.status === 401) {
+        router.replace('/login');
+        router.refresh();
+        return;
+      }
+
+      const data: unknown = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        const message =
+          typeof data === 'object' &&
+          data !== null &&
+          'message' in data &&
+          typeof data.message === 'string'
+            ? data.message
+            : 'Failed To Add New Project, Try Again Later';
+
+        setServerError(message);
+        return;
+      }
+
+      reset();
+      toast.success('Project created successfully.');
+    } catch {
+      setServerError('Failed To Add New Project, Try Again Later');
+    }
+  }
 
   return (
     <div className="mx-auto w-full max-w-[1280px] px-6 pt-8 pb-12 lg:px-8">
@@ -182,11 +231,18 @@ export function CreateProjectForm() {
 
               <Button
                 type="submit"
-                className="order-1 w-full rounded-md px-6 py-4 text-base leading-6 font-bold shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-4px_rgba(0,0,0,0.1)] lg:order-2 lg:w-auto lg:rounded-sm lg:px-8 lg:py-3 lg:text-sm lg:leading-5 lg:shadow-[0_10px_15px_-3px_rgba(0,61,155,0.2),0_4px_6px_-4px_rgba(0,61,155,0.2)]"
+                disabled={isSubmitting}
+                className="order-1 w-full cursor-pointer rounded-md px-6 py-4 text-base leading-6 font-bold shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-4px_rgba(0,0,0,0.1)] lg:order-2 lg:w-auto lg:rounded-sm lg:px-8 lg:py-3 lg:text-sm lg:leading-5 lg:shadow-[0_10px_15px_-3px_rgba(0,61,155,0.2),0_4px_6px_-4px_rgba(0,61,155,0.2)]"
               >
                 Create Project
               </Button>
             </div>
+
+            {serverError && (
+              <p role="alert" className="text-error text-center text-xs leading-4 font-medium">
+                {serverError}
+              </p>
+            )}
           </form>
 
           <aside className="bg-surface-low mt-12 rounded-md p-6 lg:mt-0 lg:rounded-none">
