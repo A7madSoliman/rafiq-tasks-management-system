@@ -232,7 +232,7 @@ export function CreateProjectForm() {
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="order-1 w-full cursor-pointer rounded-md px-6 py-4 text-base leading-6 font-bold shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-4px_rgba(0,0,0,0.1)] lg:order-2 lg:w-auto lg:rounded-sm lg:px-8 lg:py-3 lg:text-sm lg:leading-5 lg:shadow-[0_10px_15px_-3px_rgba(0,61,155,0.2),0_4px_6px_-4px_rgba(0,61,155,0.2)]"
+                className="order-1 w-full cursor-pointer rounded-md px-6 py-4 text-base leading-6 font-bold shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-4px_rgba(0,0,0,0.1)] disabled:cursor-not-allowed disabled:opacity-60 lg:order-2 lg:w-auto lg:rounded-sm lg:px-8 lg:py-3 lg:text-sm lg:leading-5 lg:shadow-[0_10px_15px_-3px_rgba(0,61,155,0.2),0_4px_6px_-4px_rgba(0,61,155,0.2)]"
               >
                 Create Project
               </Button>
