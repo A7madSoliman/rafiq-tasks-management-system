@@ -10,6 +10,14 @@ import { useProjects } from '@/features/projects/hooks/use-projects';
 export default function ProjectPage() {
   const { projects, status, retry } = useProjects();
 
+  const PROJECTS_PER_PAGE = 8;
+  const currentPage = 1;
+
+  const startIndex = (currentPage - 1) * PROJECTS_PER_PAGE;
+  const endIndex = startIndex + PROJECTS_PER_PAGE;
+
+  const paginatedProjects = projects.slice(startIndex, endIndex);
+
   if (status === 'loading') {
     return <ProjectsLoadingState />;
   }
@@ -24,7 +32,7 @@ export default function ProjectPage() {
   return (
     <>
       <div className="flex min-h-[calc(100dvh-4rem)] flex-col">
-        <ProjectsList projects={projects} />
+        <ProjectsList projects={paginatedProjects} />
         <div className="mt-auto">
           <ProjectsPagination />
         </div>
