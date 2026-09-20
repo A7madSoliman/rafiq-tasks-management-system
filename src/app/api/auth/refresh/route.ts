@@ -1,3 +1,4 @@
+import { clearAuthCookies, setAuthCookies } from '@/lib/auth/auth-cookies';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
@@ -46,9 +47,7 @@ export async function POST() {
   const data: unknown = await response.json().catch(() => null);
 
   if (!response.ok) {
-    cookieStore.delete('access_token');
-    cookieStore.delete('refresh_token');
-    cookieStore.delete('remember_me');
+    await clearAuthCookies();
 
     return NextResponse.json(
       {
@@ -78,33 +77,10 @@ export async function POST() {
     );
   }
 
-  const cookieOptions = {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax' as const,
-    path: '/',
-  };
-
-  cookieStore.set('access_token', data.access_token, {
-    ...cookieOptions,
-  });
-
-  cookieStore.set('refresh_token', data.refresh_token, {
-    ...cookieOptions,
-    ...(rememberMe
-      ? {
-          maxAge: 60 * 60 * 24 * 30,
-        }
-      : {}),
-  });
-
-  cookieStore.set('remember_me', rememberMe ? '1' : '0', {
-    ...cookieOptions,
-    ...(rememberMe
-      ? {
-          maxAge: 60 * 60 * 24 * 30,
-        }
-      : {}),
+  await setAuthCookies({
+    accessToken: data.access_token,
+    refreshToken: data.refresh_token,
+    rememberMe,
   });
 
   return NextResponse.json(
