@@ -7,16 +7,18 @@ import ChevronIcon from '@/assets/icons/navigation/chevron.svg';
 import ProjectFolderIcon from '@/assets/icons/navigation/project-folder.svg';
 import { activeProjectNavigation } from '@/config/navigation';
 import { cn } from '@/lib/cn';
+import { getActiveProjectId } from '@/features/projects/utils/get-active-project-id';
 
 type ActiveProjectNavigationProps = {
   isCollapsed: boolean;
   onNavigate?: () => void;
 };
 
-const ACTIVE_PROJECT_NAME = 'Active Project Name';
+const ACTIVE_PROJECT = 'Active Project';
 
 export function ActiveProjectNavigation({ isCollapsed, onNavigate }: ActiveProjectNavigationProps) {
   const pathname = usePathname();
+  const projectId = getActiveProjectId(pathname);
 
   const [isAccordionOpen, setIsAccordionOpen] = useState(true);
   const [isPopupOpen, setIsPopupOpen] = useState(false);
@@ -50,6 +52,10 @@ export function ActiveProjectNavigation({ isCollapsed, onNavigate }: ActiveProje
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [isPopupOpen]);
+
+  if (!projectId) {
+    return null;
+  }
 
   if (isCollapsed) {
     return (
@@ -85,13 +91,14 @@ export function ActiveProjectNavigation({ isCollapsed, onNavigate }: ActiveProje
           )}
         >
           {activeProjectNavigation.map((item) => {
-            const isActive = pathname === item.href;
+            const href = `/project/${projectId}/${item.segment}`;
+            const isActive = pathname === href;
             const Icon = item.icon;
 
             return (
               <Link
-                key={item.href}
-                href={item.href}
+                key={item.segment}
+                href={href}
                 aria-current={isActive ? 'page' : undefined}
                 onClick={onNavigate}
                 className={cn(
@@ -125,7 +132,7 @@ export function ActiveProjectNavigation({ isCollapsed, onNavigate }: ActiveProje
         <ProjectFolderIcon aria-hidden="true" className="size-5 shrink-0" />
 
         <span className="text-foreground min-w-0 flex-1 truncate text-sm font-semibold">
-          {ACTIVE_PROJECT_NAME}
+          {ACTIVE_PROJECT}
         </span>
 
         <ChevronIcon
@@ -150,13 +157,14 @@ export function ActiveProjectNavigation({ isCollapsed, onNavigate }: ActiveProje
             className="bg-surface flex flex-col gap-1 rounded-b-[6px] p-2"
           >
             {activeProjectNavigation.map((item) => {
-              const isActive = pathname === item.href;
+              const href = `/project/${projectId}/${item.segment}`;
+              const isActive = pathname === href;
               const Icon = item.icon;
 
               return (
                 <Link
-                  key={item.href}
-                  href={item.href}
+                  key={item.segment}
+                  href={href}
                   aria-current={isActive ? 'page' : undefined}
                   className={cn(
                     'text-foreground flex h-10 items-center gap-3 px-4 text-sm font-medium',

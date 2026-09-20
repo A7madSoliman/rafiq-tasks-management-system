@@ -21,22 +21,22 @@ export const mainNavigation = [
 export const activeProjectNavigation = [
   {
     label: 'Epics',
-    href: '/project/epics',
+    segment: 'epics',
     icon: EpicsIcon,
   },
   {
     label: 'Tasks',
-    href: '/project/tasks',
+    segment: 'tasks',
     icon: TasksIcon,
   },
   {
     label: 'Members',
-    href: '/project/members',
+    segment: 'members',
     icon: MembersIcon,
   },
   {
     label: 'Details',
-    href: '/project/details',
+    segment: 'details',
     icon: DetailsIcon,
   },
 ] as const;
@@ -44,27 +44,27 @@ export const activeProjectNavigation = [
 export const mobileNavigation = [
   {
     label: 'Epics',
-    href: '/project/epics',
+    segment: 'epics',
     icon: EpicsIcon,
   },
   {
     label: 'Tasks',
-    href: '/project/tasks',
+    segment: 'tasks',
     icon: TasksIcon,
   },
   {
     label: 'Projects',
-    href: '/project',
+    segment: null,
     icon: ProjectsIcon,
   },
   {
     label: 'Members',
-    href: '/project/members',
+    segment: 'members',
     icon: MembersIcon,
   },
   {
     label: 'Details',
-    href: '/project/details',
+    segment: 'details',
     icon: DetailsIcon,
   },
 ] as const;

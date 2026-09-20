@@ -1,5 +1,5 @@
 import { loginSchema } from '@/features/auth/schemas/login-schema';
-import { cookies } from 'next/headers';
+import { setAuthCookies } from '@/lib/auth/auth-cookies';
 import { NextResponse } from 'next/server';
 
 type SupabaseLoginPayload = {
@@ -88,32 +88,10 @@ export async function POST(request: Request) {
     );
   }
 
-  const cookieStore = await cookies();
-  const cookieOptions = {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax' as const,
-    path: '/',
-  };
-
-  cookieStore.set('access_token', data.access_token, {
-    ...cookieOptions,
-  });
-  cookieStore.set('refresh_token', data.refresh_token, {
-    ...cookieOptions,
-    ...(rememberMe
-      ? {
-          maxAge: 60 * 60 * 24 * 30,
-        }
-      : {}),
-  });
-  cookieStore.set('remember_me', rememberMe ? '1' : '0', {
-    ...cookieOptions,
-    ...(rememberMe
-      ? {
-          maxAge: 60 * 60 * 24 * 30,
-        }
-      : {}),
+  await setAuthCookies({
+    accessToken: data.access_token,
+    refreshToken: data.refresh_token,
+    rememberMe,
   });
 
   return NextResponse.json(

@@ -30,7 +30,6 @@ export function CreateProjectForm() {
     register,
     handleSubmit,
     control,
-    reset,
     formState: { errors, isSubmitting },
   } = useForm<CreateProjectFormValues>({
     resolver: zodResolver(createProjectSchema),
@@ -79,8 +78,8 @@ export function CreateProjectForm() {
         return;
       }
 
-      reset();
       toast.success('Project created successfully.');
+      router.push('/project');
     } catch {
       setServerError('Failed To Add New Project, Try Again Later');
     }
