@@ -21,7 +21,9 @@ export async function setAuthCookies({
   rememberMe,
 }: SetAuthCookiesParams) {
   const cookieStore = await cookies();
-
+  // Intentionally keep the access token as a session cookie.
+  // Supabase enforces the JWT expiration, and our session restore flow
+  // uses the refresh token when the access token is no longer valid.
   cookieStore.set('access_token', accessToken, {
     ...authCookieOptions,
   });
