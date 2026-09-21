@@ -169,11 +169,13 @@ export function CreateProjectForm() {
                 className="mt-0.5 hidden h-[15px] w-[12px] shrink-0 lg:block"
               />
 
-              <div className="text-foreground-muted text-xs">
-                <p className="leading-[19.5px] font-bold">Pro Tip</p>
+              <div className="text-foreground-muted text-xs lg:flex lg:items-start lg:gap-1">
+                <p className="shrink-0 leading-[19.5px] font-bold">
+                  Pro Tip
+                  <span className="hidden lg:inline">:</span>
+                </p>
 
-                <p className="mt-2 leading-normal lg:mt-0 lg:inline">
-                  <span className="hidden lg:inline">: </span>
+                <p className="mt-2 leading-normal lg:mt-0">
                   You can invite project members and assign epics immediately after the initial
                   creation process.
                 </p>
