@@ -7,21 +7,24 @@ import ChevronIcon from '@/assets/icons/navigation/chevron.svg';
 import ProjectFolderIcon from '@/assets/icons/navigation/project-folder.svg';
 import { activeProjectNavigation } from '@/config/navigation';
 import { cn } from '@/lib/cn';
-import { getActiveProjectId } from '@/features/projects/utils/get-active-project-id';
+import { useCurrentProject } from '@/features/projects/context/current-project-context';
 
 type ActiveProjectNavigationProps = {
   isCollapsed: boolean;
   onNavigate?: () => void;
 };
 
-const ACTIVE_PROJECT = 'Active Project';
-
 export function ActiveProjectNavigation({ isCollapsed, onNavigate }: ActiveProjectNavigationProps) {
   const pathname = usePathname();
-  const projectId = getActiveProjectId(pathname);
+  const { projectId, project, status } = useCurrentProject();
 
   const [isAccordionOpen, setIsAccordionOpen] = useState(true);
   const [isPopupOpen, setIsPopupOpen] = useState(false);
+
+  function handleNavigate() {
+    setIsPopupOpen(false);
+    onNavigate?.();
+  }
 
   const popupContainerRef = useRef<HTMLDivElement>(null);
 
@@ -100,7 +103,7 @@ export function ActiveProjectNavigation({ isCollapsed, onNavigate }: ActiveProje
                 key={item.segment}
                 href={href}
                 aria-current={isActive ? 'page' : undefined}
-                onClick={onNavigate}
+                onClick={handleNavigate}
                 className={cn(
                   'text-foreground flex h-10 items-center gap-3 px-3 text-sm font-medium',
                   isActive && 'bg-surface-low rounded-full',
@@ -131,9 +134,22 @@ export function ActiveProjectNavigation({ isCollapsed, onNavigate }: ActiveProje
       >
         <ProjectFolderIcon aria-hidden="true" className="size-5 shrink-0" />
 
-        <span className="text-foreground min-w-0 flex-1 truncate text-sm font-semibold">
-          {ACTIVE_PROJECT}
-        </span>
+        <div className="min-w-0 flex-1">
+          {status === 'loading' ? (
+            <div aria-hidden="true" className="bg-surface-icon h-5 w-28 animate-pulse rounded-xs" />
+          ) : project ? (
+            <span
+              title={project.name}
+              className="text-foreground block truncate text-sm font-semibold"
+            >
+              {project.name}
+            </span>
+          ) : (
+            <span className="text-foreground-muted block truncate text-sm font-medium">
+              Project unavailable
+            </span>
+          )}
+        </div>
 
         <ChevronIcon
           aria-hidden="true"
@@ -166,6 +182,7 @@ export function ActiveProjectNavigation({ isCollapsed, onNavigate }: ActiveProje
                   key={item.segment}
                   href={href}
                   aria-current={isActive ? 'page' : undefined}
+                  onClick={handleNavigate}
                   className={cn(
                     'text-foreground flex h-10 items-center gap-3 px-4 text-sm font-medium',
                     isActive && 'bg-surface-low rounded-full',

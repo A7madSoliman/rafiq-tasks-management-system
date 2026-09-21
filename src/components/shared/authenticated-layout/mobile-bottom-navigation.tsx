@@ -3,14 +3,16 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/cn';
-import { mainNavigation, mobileNavigation } from '@/config/navigation';
-import { getActiveProjectId } from '@/features/projects/utils/get-active-project-id';
+import { mobileNavigation } from '@/config/navigation';
+import { useCurrentProject } from '@/features/projects/context/current-project-context';
 
 export function MobileBottomNavigation() {
   const pathname = usePathname();
-  const projectId = getActiveProjectId(pathname);
+  const { projectId } = useCurrentProject();
 
-  const navigationItems = projectId ? mobileNavigation : mainNavigation;
+  const navigationItems = projectId
+    ? mobileNavigation
+    : mobileNavigation.filter((item) => item.segment === null);
 
   return (
     <nav
@@ -19,12 +21,7 @@ export function MobileBottomNavigation() {
     >
       <div className="flex items-center justify-center gap-8">
         {navigationItems.map((item) => {
-          const href =
-            'href' in item
-              ? item.href
-              : item.segment === null
-                ? '/project'
-                : `/project/${projectId}/${item.segment}`;
+          const href = item.segment === null ? '/project' : `/project/${projectId}/${item.segment}`;
 
           const isActive = pathname === href;
           const Icon = item.icon;
