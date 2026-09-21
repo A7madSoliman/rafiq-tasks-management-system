@@ -1,16 +1,12 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { useProject } from '../hooks/use-project';
 import { EditProjectForm } from './edit-project-form';
 import { EditProjectLoadingState } from './edit-project-loading-state';
+import { useCurrentProject } from '../context/current-project-context';
 
-type EditProjectScreenProps = {
-  projectId: string;
-};
-
-export function EditProjectScreen({ projectId }: EditProjectScreenProps) {
-  const { project, status, errorMessage, retry } = useProject(projectId);
+export function EditProjectScreen() {
+  const { project, status, errorMessage, retry } = useCurrentProject();
 
   if (status === 'loading') {
     return <EditProjectLoadingState />;
