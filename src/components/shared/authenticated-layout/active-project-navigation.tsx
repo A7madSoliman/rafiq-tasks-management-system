@@ -7,7 +7,6 @@ import ChevronIcon from '@/assets/icons/navigation/chevron.svg';
 import ProjectFolderIcon from '@/assets/icons/navigation/project-folder.svg';
 import { activeProjectNavigation } from '@/config/navigation';
 import { cn } from '@/lib/cn';
-import { getActiveProjectId } from '@/features/projects/utils/get-active-project-id';
 import { useCurrentProject } from '@/features/projects/context/current-project-context';
 
 type ActiveProjectNavigationProps = {
