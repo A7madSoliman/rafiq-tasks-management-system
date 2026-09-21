@@ -6,10 +6,11 @@ import type { Project } from '../types/project';
 import { ProjectCard } from './project-card';
 
 type ProjectsListProps = {
-  projects: Project[];
+  desktopProjects: Project[];
+  mobileProjects: Project[];
 };
 
-export function ProjectsList({ projects }: ProjectsListProps) {
+export function ProjectsList({ desktopProjects, mobileProjects }: ProjectsListProps) {
   return (
     <section className="w-full px-6 py-6 lg:px-8 lg:py-8">
       <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-6 lg:gap-10">
@@ -32,15 +33,20 @@ export function ProjectsList({ projects }: ProjectsListProps) {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 lg:grid-cols-3">
-          {projects.map((project) => (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 lg:hidden">
+          {mobileProjects.map((project) => (
+            <ProjectCard key={project.id} project={project} />
+          ))}
+        </div>
+        <div className="hidden grid-cols-3 gap-6 lg:grid">
+          {desktopProjects.map((project) => (
             <ProjectCard key={project.id} project={project} />
           ))}
 
           <Link
             href="/project/add"
             aria-label="Add project"
-            className="bg-surface border-outline/20 hidden min-h-[220px] items-center justify-center rounded-md border-2 border-dashed p-6 lg:flex"
+            className="bg-surface border-outline/20 flex min-h-[220px] items-center justify-center rounded-md border-2 border-dashed p-6"
           >
             <div className="flex flex-col items-center gap-4">
               <div className="bg-surface-low flex size-12 items-center justify-center rounded-[12px]">

@@ -19,7 +19,12 @@ export function MobileBottomNavigation() {
       aria-label="Mobile navigation"
       className="bg-surface-low fixed inset-x-0 bottom-0 z-40 flex h-16 items-center justify-center lg:hidden"
     >
-      <div className="flex items-center justify-center gap-8">
+      <div
+        className={cn(
+          'grid w-full items-center px-2',
+          navigationItems.length === 1 ? 'grid-cols-1' : 'grid-cols-5',
+        )}
+      >
         {navigationItems.map((item) => {
           const href = item.segment === null ? '/project' : `/project/${projectId}/${item.segment}`;
 
@@ -32,7 +37,7 @@ export function MobileBottomNavigation() {
               href={href}
               aria-current={isActive ? 'page' : undefined}
               className={cn(
-                'flex min-w-[72px] flex-col items-center justify-center gap-0.5 text-[10px] leading-[15px]',
+                'flex min-w-0 flex-col items-center justify-center gap-0.5 px-1 text-[10px] leading-[15px]',
                 isActive ? 'text-primary font-semibold' : 'text-foreground-muted font-normal',
               )}
             >
