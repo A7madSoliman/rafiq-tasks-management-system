@@ -36,7 +36,7 @@ export const activeProjectNavigation = [
   },
   {
     label: 'Details',
-    segment: 'details',
+    segment: 'edit',
     icon: DetailsIcon,
   },
 ] as const;
@@ -64,7 +64,7 @@ export const mobileNavigation = [
   },
   {
     label: 'Details',
-    segment: 'details',
+    segment: 'edit',
     icon: DetailsIcon,
   },
 ] as const;
