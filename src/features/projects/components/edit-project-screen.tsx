@@ -1,8 +1,9 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-
 import { useProject } from '../hooks/use-project';
+import { EditProjectForm } from './edit-project-form';
+import { EditProjectLoadingState } from './edit-project-loading-state';
 
 type EditProjectScreenProps = {
   projectId: string;
@@ -12,11 +13,7 @@ export function EditProjectScreen({ projectId }: EditProjectScreenProps) {
   const { project, status, errorMessage, retry } = useProject(projectId);
 
   if (status === 'loading') {
-    return (
-      <div className="flex min-h-[50dvh] items-center justify-center px-6">
-        <p className="text-foreground-muted text-sm">Loading project...</p>
-      </div>
-    );
+    return <EditProjectLoadingState />;
   }
 
   if (status === 'error') {
@@ -37,11 +34,5 @@ export function EditProjectScreen({ projectId }: EditProjectScreenProps) {
     return null;
   }
 
-  return (
-    <div className="p-6">
-      <h1 className="text-foreground text-2xl font-semibold">Edit Project</h1>
-
-      <p className="text-foreground-muted mt-2 text-sm">{project.name}</p>
-    </div>
-  );
+  return <EditProjectForm key={project.id} project={project} />;
 }
