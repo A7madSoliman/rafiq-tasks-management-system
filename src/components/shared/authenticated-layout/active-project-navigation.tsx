@@ -21,6 +21,11 @@ export function ActiveProjectNavigation({ isCollapsed, onNavigate }: ActiveProje
   const [isAccordionOpen, setIsAccordionOpen] = useState(true);
   const [isPopupOpen, setIsPopupOpen] = useState(false);
 
+  function handleNavigate() {
+    setIsPopupOpen(false);
+    onNavigate?.();
+  }
+
   const popupContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -98,7 +103,7 @@ export function ActiveProjectNavigation({ isCollapsed, onNavigate }: ActiveProje
                 key={item.segment}
                 href={href}
                 aria-current={isActive ? 'page' : undefined}
-                onClick={onNavigate}
+                onClick={handleNavigate}
                 className={cn(
                   'text-foreground flex h-10 items-center gap-3 px-3 text-sm font-medium',
                   isActive && 'bg-surface-low rounded-full',
@@ -177,6 +182,7 @@ export function ActiveProjectNavigation({ isCollapsed, onNavigate }: ActiveProje
                   key={item.segment}
                   href={href}
                   aria-current={isActive ? 'page' : undefined}
+                  onClick={handleNavigate}
                   className={cn(
                     'text-foreground flex h-10 items-center gap-3 px-4 text-sm font-medium',
                     isActive && 'bg-surface-low rounded-full',
