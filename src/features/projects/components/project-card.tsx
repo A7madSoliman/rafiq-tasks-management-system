@@ -3,6 +3,7 @@ import Link from 'next/link';
 import EpicsIcon from '@/assets/icons/navigation/epics.svg';
 import MembersIcon from '@/assets/icons/navigation/members.svg';
 import TasksIcon from '@/assets/icons/navigation/tasks.svg';
+import EditIcon from '@/assets/icons/projects/edit.svg';
 import type { Project } from '../types/project';
 import { formatProjectDate } from '../utils/format-project-date';
 
@@ -46,9 +47,19 @@ export function ProjectCard({ project }: ProjectCardProps) {
             aria-label={`Open members for ${project.name}`}
             className="text-primary focus-visible:outline-primary flex items-center gap-0.5 rounded-xs focus-visible:outline-2 focus-visible:outline-offset-2"
           >
-            <MembersIcon aria-hidden="true" className="h-4 w-[22px] [&_path]:fill-current" />
+            <MembersIcon aria-hidden="true" className="h-4 w-[20px] [&_path]:fill-current" />
 
             <span className="text-[10px] leading-[15px] font-semibold">Members</span>
+          </Link>
+
+          <Link
+            href={`/project/${project.id}/edit`}
+            aria-label={`Edit ${project.name}`}
+            className="text-primary focus-visible:outline-primary flex items-center gap-0.5 rounded-xs focus-visible:outline-2 focus-visible:outline-offset-2"
+          >
+            <EditIcon aria-hidden="true" className="h-5 w-[20px]" />
+
+            <span className="text-[10px] leading-[15px] font-semibold">Edit</span>
           </Link>
         </div>
       </div>
