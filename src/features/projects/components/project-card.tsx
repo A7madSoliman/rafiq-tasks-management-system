@@ -12,11 +12,7 @@ type ProjectCardProps = {
 
 export function ProjectCard({ project }: ProjectCardProps) {
   return (
-    <Link
-      href={`/project/${project.id}/epics`}
-      aria-label={`Open project ${project.name}`}
-      className="bg-surface focus-visible:outline-primary flex min-h-[220px] min-w-0 flex-col gap-4 rounded-md p-6 focus-visible:outline-2 focus-visible:outline-offset-2"
-    >
+    <article className="bg-surface flex min-h-[220px] min-w-0 flex-col gap-4 rounded-md p-6">
       <div className="flex flex-1 flex-col gap-2">
         <h2 className="text-foreground truncate text-lg leading-7 font-medium">{project.name}</h2>
 
@@ -25,23 +21,35 @@ export function ProjectCard({ project }: ProjectCardProps) {
         </p>
 
         <div className="mt-auto flex items-center justify-between pt-4">
-          <div className="text-primary flex items-center gap-1">
+          <Link
+            href={`/project/${project.id}/epics`}
+            aria-label={`Open epics for ${project.name}`}
+            className="text-primary focus-visible:outline-primary flex items-center gap-1 rounded-xs focus-visible:outline-2 focus-visible:outline-offset-2"
+          >
             <EpicsIcon aria-hidden="true" className="h-[18px] w-5 [&_path]:fill-current" />
 
             <span className="text-[10px] leading-[15px] font-semibold">Epics</span>
-          </div>
+          </Link>
 
-          <div className="text-primary flex items-center gap-0.5">
+          <Link
+            href={`/project/${project.id}/tasks`}
+            aria-label={`Open tasks for ${project.name}`}
+            className="text-primary focus-visible:outline-primary flex items-center gap-0.5 rounded-xs focus-visible:outline-2 focus-visible:outline-offset-2"
+          >
             <TasksIcon aria-hidden="true" className="h-[15px] w-5 [&_path]:fill-current" />
 
             <span className="text-[10px] leading-[15px] font-semibold">Tasks</span>
-          </div>
+          </Link>
 
-          <div className="text-primary flex items-center gap-0.5">
+          <Link
+            href={`/project/${project.id}/members`}
+            aria-label={`Open members for ${project.name}`}
+            className="text-primary focus-visible:outline-primary flex items-center gap-0.5 rounded-xs focus-visible:outline-2 focus-visible:outline-offset-2"
+          >
             <MembersIcon aria-hidden="true" className="h-4 w-[22px] [&_path]:fill-current" />
 
             <span className="text-[10px] leading-[15px] font-semibold">Members</span>
-          </div>
+          </Link>
         </div>
       </div>
 
@@ -57,6 +65,6 @@ export function ProjectCard({ project }: ProjectCardProps) {
           {formatProjectDate(project.createdAt)}
         </time>
       </div>
-    </Link>
+    </article>
   );
 }
