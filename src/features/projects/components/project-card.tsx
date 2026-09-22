@@ -17,7 +17,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
       <div className="flex flex-1 flex-col gap-2">
         <h2 className="text-foreground truncate text-lg leading-7 font-medium">{project.name}</h2>
 
-        <p className="text-foreground-secondary line-clamp-3 min-h-[68px] text-sm leading-[22.75px]">
+        <p className="text-foreground-secondary line-clamp-2 min-h-[46px] text-sm leading-[22.75px]">
           {project.description ?? ''}
         </p>
 
@@ -55,7 +55,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
           >
             <MembersIcon
               aria-hidden="true"
-              className="h-4 w-[20px] transition-transform duration-200 ease-out group-hover:scale-110 group-focus-visible:scale-110 motion-reduce:transition-none [&_path]:fill-current"
+              className="h-[14px] w-5 transition-transform duration-200 ease-out group-hover:scale-110 group-focus-visible:scale-110 motion-reduce:transition-none [&_path]:fill-current"
             />
 
             <span className="text-[10px] leading-[15px] font-semibold">Members</span>
@@ -68,7 +68,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
           >
             <EditIcon
               aria-hidden="true"
-              className="h-5 w-[20px] transition-transform duration-200 ease-out group-hover:scale-110 group-focus-visible:scale-110 motion-reduce:transition-none"
+              className="h-5 w-5 transition-transform duration-200 ease-out group-hover:scale-110 group-focus-visible:scale-110 motion-reduce:transition-none"
             />
 
             <span className="text-[10px] leading-[15px] font-semibold">Edit</span>
