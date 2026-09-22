@@ -3,6 +3,7 @@ import Link from 'next/link';
 import EpicsIcon from '@/assets/icons/navigation/epics.svg';
 import MembersIcon from '@/assets/icons/navigation/members.svg';
 import TasksIcon from '@/assets/icons/navigation/tasks.svg';
+import EditIcon from '@/assets/icons/projects/edit.svg';
 import type { Project } from '../types/project';
 import { formatProjectDate } from '../utils/format-project-date';
 
@@ -12,36 +13,66 @@ type ProjectCardProps = {
 
 export function ProjectCard({ project }: ProjectCardProps) {
   return (
-    <Link
-      href={`/project/${project.id}/epics`}
-      aria-label={`Open project ${project.name}`}
-      className="bg-surface focus-visible:outline-primary flex min-h-[220px] min-w-0 flex-col gap-4 rounded-md p-6 focus-visible:outline-2 focus-visible:outline-offset-2"
-    >
+    <article className="bg-surface flex min-h-[220px] min-w-0 flex-col gap-4 rounded-md p-6">
       <div className="flex flex-1 flex-col gap-2">
         <h2 className="text-foreground truncate text-lg leading-7 font-medium">{project.name}</h2>
 
-        <p className="text-foreground-secondary line-clamp-3 min-h-[68px] text-sm leading-[22.75px]">
+        <p className="text-foreground-secondary line-clamp-2 min-h-[46px] text-sm leading-[22.75px]">
           {project.description ?? ''}
         </p>
 
         <div className="mt-auto flex items-center justify-between pt-4">
-          <div className="text-primary flex items-center gap-1">
-            <EpicsIcon aria-hidden="true" className="h-[18px] w-5 [&_path]:fill-current" />
+          <Link
+            href={`/project/${project.id}/epics`}
+            aria-label={`Open epics for ${project.name}`}
+            className="group text-primary focus-visible:outline-primary flex items-center gap-1 rounded-xs focus-visible:outline-2 focus-visible:outline-offset-2"
+          >
+            <EpicsIcon
+              aria-hidden="true"
+              className="h-[18px] w-5 transition-transform duration-200 ease-out group-hover:scale-110 group-focus-visible:scale-110 motion-reduce:transition-none [&_path]:fill-current"
+            />
 
             <span className="text-[10px] leading-[15px] font-semibold">Epics</span>
-          </div>
+          </Link>
 
-          <div className="text-primary flex items-center gap-0.5">
-            <TasksIcon aria-hidden="true" className="h-[15px] w-5 [&_path]:fill-current" />
+          <Link
+            href={`/project/${project.id}/tasks`}
+            aria-label={`Open tasks for ${project.name}`}
+            className="group text-primary focus-visible:outline-primary flex items-center gap-0.5 rounded-xs focus-visible:outline-2 focus-visible:outline-offset-2"
+          >
+            <TasksIcon
+              aria-hidden="true"
+              className="h-[15px] w-5 transition-transform duration-200 ease-out group-hover:scale-110 group-focus-visible:scale-110 motion-reduce:transition-none [&_path]:fill-current"
+            />
 
             <span className="text-[10px] leading-[15px] font-semibold">Tasks</span>
-          </div>
+          </Link>
 
-          <div className="text-primary flex items-center gap-0.5">
-            <MembersIcon aria-hidden="true" className="h-4 w-[22px] [&_path]:fill-current" />
+          <Link
+            href={`/project/${project.id}/members`}
+            aria-label={`Open members for ${project.name}`}
+            className="group text-primary focus-visible:outline-primary flex items-center gap-0.5 rounded-xs focus-visible:outline-2 focus-visible:outline-offset-2"
+          >
+            <MembersIcon
+              aria-hidden="true"
+              className="h-[14px] w-5 transition-transform duration-200 ease-out group-hover:scale-110 group-focus-visible:scale-110 motion-reduce:transition-none [&_path]:fill-current"
+            />
 
             <span className="text-[10px] leading-[15px] font-semibold">Members</span>
-          </div>
+          </Link>
+
+          <Link
+            href={`/project/${project.id}/edit`}
+            aria-label={`Edit ${project.name}`}
+            className="group text-primary focus-visible:outline-primary flex items-center gap-0.5 rounded-xs focus-visible:outline-2 focus-visible:outline-offset-2"
+          >
+            <EditIcon
+              aria-hidden="true"
+              className="h-5 w-5 transition-transform duration-200 ease-out group-hover:scale-110 group-focus-visible:scale-110 motion-reduce:transition-none"
+            />
+
+            <span className="text-[10px] leading-[15px] font-semibold">Edit</span>
+          </Link>
         </div>
       </div>
 
@@ -57,6 +88,6 @@ export function ProjectCard({ project }: ProjectCardProps) {
           {formatProjectDate(project.createdAt)}
         </time>
       </div>
-    </Link>
+    </article>
   );
 }
