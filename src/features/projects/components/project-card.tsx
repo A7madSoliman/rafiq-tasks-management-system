@@ -25,9 +25,12 @@ export function ProjectCard({ project }: ProjectCardProps) {
           <Link
             href={`/project/${project.id}/epics`}
             aria-label={`Open epics for ${project.name}`}
-            className="text-primary focus-visible:outline-primary flex items-center gap-1 rounded-xs focus-visible:outline-2 focus-visible:outline-offset-2"
+            className="group text-primary focus-visible:outline-primary flex items-center gap-1 rounded-xs focus-visible:outline-2 focus-visible:outline-offset-2"
           >
-            <EpicsIcon aria-hidden="true" className="h-[18px] w-5 [&_path]:fill-current" />
+            <EpicsIcon
+              aria-hidden="true"
+              className="h-[18px] w-5 transition-transform duration-200 ease-out group-hover:scale-110 group-focus-visible:scale-110 motion-reduce:transition-none [&_path]:fill-current"
+            />
 
             <span className="text-[10px] leading-[15px] font-semibold">Epics</span>
           </Link>
@@ -35,9 +38,12 @@ export function ProjectCard({ project }: ProjectCardProps) {
           <Link
             href={`/project/${project.id}/tasks`}
             aria-label={`Open tasks for ${project.name}`}
-            className="text-primary focus-visible:outline-primary flex items-center gap-0.5 rounded-xs focus-visible:outline-2 focus-visible:outline-offset-2"
+            className="group text-primary focus-visible:outline-primary flex items-center gap-0.5 rounded-xs focus-visible:outline-2 focus-visible:outline-offset-2"
           >
-            <TasksIcon aria-hidden="true" className="h-[15px] w-5 [&_path]:fill-current" />
+            <TasksIcon
+              aria-hidden="true"
+              className="h-[15px] w-5 transition-transform duration-200 ease-out group-hover:scale-110 group-focus-visible:scale-110 motion-reduce:transition-none [&_path]:fill-current"
+            />
 
             <span className="text-[10px] leading-[15px] font-semibold">Tasks</span>
           </Link>
@@ -45,9 +51,12 @@ export function ProjectCard({ project }: ProjectCardProps) {
           <Link
             href={`/project/${project.id}/members`}
             aria-label={`Open members for ${project.name}`}
-            className="text-primary focus-visible:outline-primary flex items-center gap-0.5 rounded-xs focus-visible:outline-2 focus-visible:outline-offset-2"
+            className="group text-primary focus-visible:outline-primary flex items-center gap-0.5 rounded-xs focus-visible:outline-2 focus-visible:outline-offset-2"
           >
-            <MembersIcon aria-hidden="true" className="h-4 w-[20px] [&_path]:fill-current" />
+            <MembersIcon
+              aria-hidden="true"
+              className="h-4 w-[20px] transition-transform duration-200 ease-out group-hover:scale-110 group-focus-visible:scale-110 motion-reduce:transition-none [&_path]:fill-current"
+            />
 
             <span className="text-[10px] leading-[15px] font-semibold">Members</span>
           </Link>
@@ -55,9 +64,12 @@ export function ProjectCard({ project }: ProjectCardProps) {
           <Link
             href={`/project/${project.id}/edit`}
             aria-label={`Edit ${project.name}`}
-            className="text-primary focus-visible:outline-primary flex items-center gap-0.5 rounded-xs focus-visible:outline-2 focus-visible:outline-offset-2"
+            className="group text-primary focus-visible:outline-primary flex items-center gap-0.5 rounded-xs focus-visible:outline-2 focus-visible:outline-offset-2"
           >
-            <EditIcon aria-hidden="true" className="h-5 w-[20px]" />
+            <EditIcon
+              aria-hidden="true"
+              className="h-5 w-[20px] transition-transform duration-200 ease-out group-hover:scale-110 group-focus-visible:scale-110 motion-reduce:transition-none"
+            />
 
             <span className="text-[10px] leading-[15px] font-semibold">Edit</span>
           </Link>
