@@ -18,6 +18,7 @@ import {
 const RESEND_COOLDOWN_MS = 5 * 60 * 1000;
 const MAX_RESEND_ATTEMPTS = 3;
 const RECOVERY_STORAGE_PREFIX = 'forgot-password-recovery:';
+const ACTIVE_RECOVERY_EMAIL_KEY = 'forgot-password-active-email';
 
 type StoredRecovery = {
   email: string;
@@ -84,6 +85,7 @@ export function ForgotPasswordForm() {
     register,
     handleSubmit,
     control,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<ForgotPasswordFormValues>({
     resolver: zodResolver(forgotPasswordSchema),
@@ -99,6 +101,26 @@ export function ForgotPasswordForm() {
     name: 'email',
     defaultValue: '',
   });
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      const activeEmail = sessionStorage.getItem(ACTIVE_RECOVERY_EMAIL_KEY);
+
+      if (!activeEmail) {
+        return;
+      }
+
+      setValue('email', activeEmail, {
+        shouldDirty: false,
+        shouldTouch: false,
+        shouldValidate: false,
+      });
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [setValue]);
 
   const normalizedEmail = normalizeEmail(emailValue);
 
@@ -171,6 +193,8 @@ export function ForgotPasswordForm() {
     const existingRecovery = readStoredRecovery(email);
 
     if (existingRecovery) {
+      sessionStorage.setItem(ACTIVE_RECOVERY_EMAIL_KEY, email);
+
       window.setTimeout(() => {
         const remainingSeconds = Math.max(
           0,
@@ -225,7 +249,7 @@ export function ForgotPasswordForm() {
         setResendCount(0);
         setSecondsLeft(RESEND_COOLDOWN_MS / 1000);
         setNextResendAt(nextResendAtValue);
-
+        sessionStorage.setItem(ACTIVE_RECOVERY_EMAIL_KEY, email);
         writeStoredRecovery(recovery);
       }, 0);
     } catch {
