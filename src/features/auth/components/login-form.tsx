@@ -116,12 +116,12 @@ export function LoginForm() {
                 Password
               </FieldLabel>
 
-              <button
-                type="button"
+              <Link
+                href="/forgot-password"
                 className="text-primary text-[11px] leading-[16.5px] font-bold sm:hidden"
               >
                 Forgot?
-              </button>
+              </Link>
             </div>
 
             <div className="relative">
@@ -170,12 +170,12 @@ export function LoginForm() {
               </span>
             </label>
 
-            <button
-              type="button"
+            <Link
+              href="/forgot-password"
               className="text-primary hidden cursor-pointer text-[14px] leading-5 font-medium sm:block"
             >
               Forget Password?
-            </button>
+            </Link>
           </div>
           {submitError && (
             <p role="alert" className="text-error text-[12px] leading-[18px]">
