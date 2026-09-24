@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { ResetPasswordForm } from './reset-password-form';
 
 type BootstrapStatus = 'checking' | 'ready' | 'invalid';
 
@@ -85,5 +86,5 @@ export function ResetPasswordBootstrap() {
     );
   }
 
-  return <p className="text-foreground-secondary text-sm">Recovery session ready.</p>;
+  return <ResetPasswordForm />;
 }
