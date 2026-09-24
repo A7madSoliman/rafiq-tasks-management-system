@@ -258,14 +258,14 @@ export function SignupForm() {
 
         <div className="bg-surface-icon p-md hidden flex-col gap-[7.5px] rounded-md sm:flex">
           <div className="gap-xs flex items-center">
-            {passwordChecks.minLength ? (
+            {passwordChecks.validLength ? (
               <ValidationPassedIcon aria-hidden="true" className="size-[11.667px] shrink-0" />
             ) : (
               <ValidationPendingIcon aria-hidden="true" className="size-[11.667px] shrink-0" />
             )}
 
             <span className="text-foreground-secondary text-[11px] leading-[16.5px]">
-              At least 8 characters
+              At least 8-64 characters
             </span>
           </div>
 
