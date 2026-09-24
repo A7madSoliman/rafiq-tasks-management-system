@@ -1,4 +1,5 @@
 'use client';
+
 import { useForm } from 'react-hook-form';
 import {
   forgotPasswordSchema,
@@ -9,12 +10,15 @@ import { FieldLabel } from '@/components/ui/field-label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { useState } from 'react';
 
 export function ForgotPasswordForm() {
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<ForgotPasswordFormValues>({
     resolver: zodResolver(forgotPasswordSchema),
     mode: 'onTouched',
@@ -24,7 +28,36 @@ export function ForgotPasswordForm() {
     },
   });
 
-  const onSubmit = (_values: ForgotPasswordFormValues) => {};
+  const onSubmit = async (values: ForgotPasswordFormValues) => {
+    setSubmitError(null);
+
+    try {
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(values),
+      });
+
+      const data: unknown = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        const message =
+          typeof data === 'object' &&
+          data !== null &&
+          'message' in data &&
+          typeof data.message === 'string'
+            ? data.message
+            : 'Unable to send reset link. Please try again.';
+
+        setSubmitError(message);
+        return;
+      }
+    } catch {
+      setSubmitError('Unable to connect. Please try again.');
+    }
+  };
 
   return (
     <section aria-labelledby="forgot-password-title" className="w-full max-w-[448px]">
@@ -69,8 +102,18 @@ export function ForgotPasswordForm() {
             )}
           </div>
 
-          <Button type="submit" className="h-12 w-full cursor-pointer text-[14px] sm:text-[16px]">
-            Send Reset Link
+          {submitError && (
+            <p role="alert" className="text-error text-[12px] leading-[18px]">
+              {submitError}
+            </p>
+          )}
+
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            className="h-12 w-full cursor-pointer text-[14px] sm:text-[16px]"
+          >
+            {isSubmitting ? 'Sending...' : 'Send Reset Link'}
           </Button>
         </form>
 
