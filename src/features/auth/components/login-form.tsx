@@ -75,7 +75,7 @@ export function LoginForm() {
   return (
     <section
       aria-labelledby="login-title"
-      className="sm:bg-surface sm:p-2xl flex min-h-0 w-full flex-1 flex-col sm:min-h-[586px] sm:w-[480px] sm:flex-none sm:rounded-md sm:shadow-[0_24px_24px_rgba(4,27,60,0.06)]"
+      className="sm:bg-surface sm:p-2xl w-full sm:min-h-[586px] sm:w-[480px] sm:rounded-md sm:shadow-[0_24px_24px_rgba(4,27,60,0.06)]"
     >
       <header className="mx-auto flex h-[188px] w-[232.14px] flex-col items-center pt-[88px] text-center sm:h-16 sm:w-full sm:pt-0">
         <h1
@@ -192,7 +192,7 @@ export function LoginForm() {
         </form>
       </div>
 
-      <footer className="mt-auto flex items-end justify-center sm:mt-[31px] sm:h-[53px] sm:border-t sm:border-[rgba(195,198,214,0.15)] sm:pt-[33px]">
+      <footer className="flex h-[235px] items-end justify-center sm:mt-[31px] sm:h-[53px] sm:border-t sm:border-[rgba(195,198,214,0.15)] sm:pt-[33px]">
         <p className="text-foreground-muted text-center text-[14px] leading-5">
           Don&apos;t have an account?{' '}
           <Link href="/sign-up" className="text-primary font-semibold">
