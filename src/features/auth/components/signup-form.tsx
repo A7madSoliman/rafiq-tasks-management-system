@@ -100,12 +100,12 @@ export function SignupForm() {
         <div className="sm:gap-xs flex flex-col gap-[6.875px]">
           <h1
             id="signup-title"
-            className="text-foreground text-[28px] leading-10 font-semibold tracking-[-0.8px] sm:text-center sm:text-[30px] sm:leading-9 sm:tracking-[-0.75px]"
+            className="text-foreground text-center text-[28px] leading-10 font-semibold tracking-[-0.8px] sm:text-[30px] sm:leading-9 sm:tracking-[-0.75px]"
           >
             Create your workspace
           </h1>
 
-          <p className="text-body-md text-foreground-secondary sm:hidden">
+          <p className="text-body-md text-foreground-secondary text-center sm:hidden">
             Join the curated environment for institutional trust and task precision.
           </p>
 
