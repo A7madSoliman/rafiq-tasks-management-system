@@ -8,6 +8,7 @@ import SuccessCircleIcon from '@/assets/icons/success-circle.svg';
 import { Button } from '@/components/ui/button';
 import { FieldLabel } from '@/components/ui/field-label';
 import { Input } from '@/components/ui/input';
+import ArrowLeftIcon from '@/assets/icons/arrow-left.svg';
 
 import {
   forgotPasswordSchema,
@@ -339,7 +340,11 @@ export function ForgotPasswordForm() {
         </form>
 
         <div className="mt-6 flex justify-center">
-          <Link href="/login" className="text-primary text-[14px] leading-5 font-medium">
+          <Link
+            href="/login"
+            className="text-primary flex items-center gap-2 text-[14px] leading-5 font-medium"
+          >
+            <ArrowLeftIcon aria-hidden="true" className="h-4 w-4 shrink-0" />
             Back to log in
           </Link>
         </div>
