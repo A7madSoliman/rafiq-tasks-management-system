@@ -46,7 +46,7 @@ export function SignupForm() {
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: {
-          'Context-Type': 'application/json',
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify(values),
       });
@@ -96,7 +96,7 @@ export function SignupForm() {
       aria-labelledby="signup-title"
       className="sm:bg-surface sm:p-2xl w-full sm:max-w-144 sm:overflow-hidden sm:rounded-md sm:shadow-[0_24px_48px_rgba(4,27,60,0.06)]"
     >
-      <header className="pb-xl sm:pb-10">
+      <header className="pb-xl sm:pb-6">
         <div className="sm:gap-xs flex flex-col gap-[6.875px]">
           <h1
             id="signup-title"

@@ -6,14 +6,16 @@ export default function AuthLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className="bg-background relative flex min-h-dvh flex-col overflow-x-hidden">
-      <header className="bg-background/80 sm:bg-background relative z-20 flex h-16 w-full shrink-0 items-center justify-between px-6 backdrop-blur-[6px] sm:h-20 sm:px-10 sm:backdrop-blur-none">
-        <div className="flex items-center gap-2">
-          <TasklyMark aria-hidden="true" className="h-[19.45px] w-[18px] sm:h-5" />
+    <div className="bg-background relative flex h-dvh [scrollbar-width:none] flex-col overflow-x-hidden overflow-y-auto [&::-webkit-scrollbar]:hidden">
+      <header className="bg-background/80 sm:bg-background relative z-20 h-16 w-full shrink-0 backdrop-blur-[6px] sm:h-20 sm:backdrop-blur-none">
+        <div className="mx-auto flex h-full w-full max-w-[1280px] items-center px-6 sm:px-10">
+          <div className="flex items-center gap-2">
+            <TasklyMark aria-hidden="true" className="h-[19.45px] w-[18px] sm:h-5" />
 
-          <span className="text-foreground text-xl leading-7 font-bold tracking-[-0.5px]">
-            TASKLY
-          </span>
+            <span className="text-foreground text-xl leading-7 font-bold tracking-[-0.5px]">
+              TASKLY
+            </span>
+          </div>
         </div>
       </header>
 
