@@ -46,7 +46,7 @@ export function SignupForm() {
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: {
-          'Context-Type': 'application/json',
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify(values),
       });
