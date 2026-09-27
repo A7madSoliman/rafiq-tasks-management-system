@@ -1,85 +1,20 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, useWatch } from 'react-hook-form';
+import ArrowLeftIcon from '@/assets/icons/arrow-left.svg';
 import SuccessCircleIcon from '@/assets/icons/success-circle.svg';
 import { Button } from '@/components/ui/button';
 import { FieldLabel } from '@/components/ui/field-label';
 import { Input } from '@/components/ui/input';
-import ArrowLeftIcon from '@/assets/icons/arrow-left.svg';
-
 import {
   forgotPasswordSchema,
   type ForgotPasswordFormValues,
 } from '../schemas/forgot-password-schema';
-
-const RESEND_COOLDOWN_MS = 5 * 60 * 1000;
-const MAX_RESEND_ATTEMPTS = 3;
-const RECOVERY_STORAGE_PREFIX = 'forgot-password-recovery:';
-
-type StoredRecovery = {
-  email: string;
-  resendCount: number;
-  nextResendAt: number;
-};
-
-function normalizeEmail(email: string) {
-  return email.trim().toLowerCase();
-}
-
-function getRecoveryStorageKey(email: string) {
-  return `${RECOVERY_STORAGE_PREFIX}${encodeURIComponent(normalizeEmail(email))}`;
-}
-
-function readStoredRecovery(email: string): StoredRecovery | null {
-  const storedRecovery = sessionStorage.getItem(getRecoveryStorageKey(email));
-
-  if (!storedRecovery) {
-    return null;
-  }
-
-  try {
-    const parsed: unknown = JSON.parse(storedRecovery);
-
-    if (
-      typeof parsed !== 'object' ||
-      parsed === null ||
-      !('email' in parsed) ||
-      typeof parsed.email !== 'string' ||
-      !('resendCount' in parsed) ||
-      typeof parsed.resendCount !== 'number' ||
-      !('nextResendAt' in parsed) ||
-      typeof parsed.nextResendAt !== 'number'
-    ) {
-      sessionStorage.removeItem(getRecoveryStorageKey(email));
-      return null;
-    }
-
-    return {
-      email: parsed.email,
-      resendCount: parsed.resendCount,
-      nextResendAt: parsed.nextResendAt,
-    };
-  } catch {
-    sessionStorage.removeItem(getRecoveryStorageKey(email));
-    return null;
-  }
-}
-
-function writeStoredRecovery(recovery: StoredRecovery) {
-  sessionStorage.setItem(getRecoveryStorageKey(recovery.email), JSON.stringify(recovery));
-}
+import { useForgotPassword } from '../hooks/use-forgot-password';
 
 export function ForgotPasswordForm() {
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [requestEmail, setRequestEmail] = useState<string | null>(null);
-  const [nextResendAt, setNextResendAt] = useState<number | null>(null);
-  const [secondsLeft, setSecondsLeft] = useState(0);
-  const [resendCount, setResendCount] = useState(0);
-  const [isResending, setIsResending] = useState(false);
-
   const {
     register,
     handleSubmit,
@@ -100,63 +35,16 @@ export function ForgotPasswordForm() {
     defaultValue: '',
   });
 
-  const normalizedEmail = normalizeEmail(emailValue);
-
-  useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
-      if (!normalizedEmail) {
-        setRequestEmail(null);
-        setResendCount(0);
-        setSecondsLeft(0);
-        setNextResendAt(null);
-        return;
-      }
-
-      const storedRecovery = readStoredRecovery(normalizedEmail);
-
-      if (!storedRecovery) {
-        setRequestEmail(null);
-        setResendCount(0);
-        setSecondsLeft(0);
-        setNextResendAt(null);
-        return;
-      }
-
-      const remainingSeconds = Math.max(
-        0,
-        Math.ceil((storedRecovery.nextResendAt - Date.now()) / 1000),
-      );
-
-      setRequestEmail(storedRecovery.email);
-      setResendCount(storedRecovery.resendCount);
-      setSecondsLeft(remainingSeconds);
-      setNextResendAt(storedRecovery.nextResendAt);
-    }, 0);
-
-    return () => {
-      window.clearTimeout(timeoutId);
-    };
-  }, [normalizedEmail]);
-
-  useEffect(() => {
-    if (!nextResendAt) {
-      return;
-    }
-
-    const updateCountdown = () => {
-      const remainingSeconds = Math.max(0, Math.ceil((nextResendAt - Date.now()) / 1000));
-
-      setSecondsLeft(remainingSeconds);
-    };
-
-    const timeoutId = window.setTimeout(updateCountdown, 0);
-    const intervalId = window.setInterval(updateCountdown, 1000);
-
-    return () => {
-      window.clearTimeout(timeoutId);
-      window.clearInterval(intervalId);
-    };
-  }, [nextResendAt]);
+  const {
+    requestEmail,
+    secondsLeft,
+    isResending,
+    submitError,
+    requestResetLink,
+    resendResetLink,
+    resendLimitReached,
+    remainingAttempts,
+  } = useForgotPassword(emailValue);
 
   const minutes = Math.floor(secondsLeft / 60);
   const seconds = secondsLeft % 60;
@@ -164,120 +52,7 @@ export function ForgotPasswordForm() {
   const formattedTime = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 
   const onSubmit = async (values: ForgotPasswordFormValues) => {
-    setSubmitError(null);
-
-    const email = normalizeEmail(values.email);
-
-    const existingRecovery = readStoredRecovery(email);
-
-    if (existingRecovery) {
-      window.setTimeout(() => {
-        const remainingSeconds = Math.max(
-          0,
-          Math.ceil((existingRecovery.nextResendAt - Date.now()) / 1000),
-        );
-
-        setRequestEmail(existingRecovery.email);
-        setResendCount(existingRecovery.resendCount);
-        setSecondsLeft(remainingSeconds);
-        setNextResendAt(existingRecovery.nextResendAt);
-      }, 0);
-
-      return;
-    }
-
-    try {
-      const response = await fetch('/api/auth/forgot-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email,
-        }),
-      });
-
-      const data: unknown = await response.json().catch(() => null);
-
-      if (!response.ok) {
-        const message =
-          typeof data === 'object' &&
-          data !== null &&
-          'message' in data &&
-          typeof data.message === 'string'
-            ? data.message
-            : 'Unable to send reset link. Please try again.';
-
-        setSubmitError(message);
-        return;
-      }
-
-      window.setTimeout(() => {
-        const nextResendAtValue = Date.now() + RESEND_COOLDOWN_MS;
-
-        const recovery: StoredRecovery = {
-          email,
-          resendCount: 0,
-          nextResendAt: nextResendAtValue,
-        };
-
-        setRequestEmail(email);
-        setResendCount(0);
-        setSecondsLeft(RESEND_COOLDOWN_MS / 1000);
-        setNextResendAt(nextResendAtValue);
-        writeStoredRecovery(recovery);
-      }, 0);
-    } catch {
-      setSubmitError('Unable to connect. Please try again.');
-    }
-  };
-
-  const handleResend = async () => {
-    if (!requestEmail || secondsLeft > 0 || resendCount >= MAX_RESEND_ATTEMPTS || isResending) {
-      return;
-    }
-
-    setIsResending(true);
-    setSubmitError(null);
-
-    try {
-      const response = await fetch('/api/auth/forgot-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: requestEmail,
-        }),
-      });
-
-      if (!response.ok) {
-        setSubmitError('Unable to resend reset link. Please try again.');
-        setIsResending(false);
-        return;
-      }
-
-      window.setTimeout(() => {
-        const nextCount = resendCount + 1;
-        const nextResendAtValue = Date.now() + RESEND_COOLDOWN_MS;
-
-        const recovery: StoredRecovery = {
-          email: requestEmail,
-          resendCount: nextCount,
-          nextResendAt: nextResendAtValue,
-        };
-
-        setResendCount(nextCount);
-        setSecondsLeft(RESEND_COOLDOWN_MS / 1000);
-        setNextResendAt(nextResendAtValue);
-        setIsResending(false);
-
-        writeStoredRecovery(recovery);
-      }, 0);
-    } catch {
-      setSubmitError('Unable to connect. Please try again.');
-      setIsResending(false);
-    }
+    await requestResetLink(values.email);
   };
 
   return (
@@ -366,11 +141,11 @@ export function ForgotPasswordForm() {
 
             <button
               type="button"
-              onClick={handleResend}
-              disabled={secondsLeft > 0 || resendCount >= MAX_RESEND_ATTEMPTS || isResending}
+              onClick={resendResetLink}
+              disabled={secondsLeft > 0 || resendLimitReached || isResending}
               className="text-primary cursor-pointer text-[11px] leading-[16.5px] font-bold tracking-[1.1px] uppercase disabled:cursor-not-allowed"
             >
-              {resendCount >= MAX_RESEND_ATTEMPTS
+              {resendLimitReached
                 ? 'Resend limit reached'
                 : isResending
                   ? 'Sending...'
@@ -381,7 +156,7 @@ export function ForgotPasswordForm() {
           </div>
 
           <p className="mt-2 text-[11px] leading-[16.5px] text-[rgba(0,82,53,0.6)]">
-            Resend attempts remaining: {Math.max(0, MAX_RESEND_ATTEMPTS - resendCount)}
+            Resend attempts remaining: {remainingAttempts}
           </p>
         </div>
       )}

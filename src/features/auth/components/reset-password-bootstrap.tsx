@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { ResetPasswordForm } from './reset-password-form';
+import Link from 'next/link';
 
 type BootstrapStatus = 'checking' | 'ready' | 'invalid';
 
@@ -74,15 +75,20 @@ export function ResetPasswordBootstrap() {
     };
   }, []);
 
-  if (status === 'checking') {
-    return <p className="text-foreground-secondary text-sm">Checking reset link...</p>;
-  }
-
   if (status === 'invalid') {
     return (
-      <p role="alert" className="text-error text-sm">
-        Invalid or expired reset link.
-      </p>
+      <div className="flex flex-col items-center gap-4 text-center">
+        <p role="alert" className="text-error text-sm">
+          Invalid or expired reset link.
+        </p>
+
+        <Link
+          href="/forgot-password"
+          className="bg-primary text-on-primary inline-flex h-12 items-center justify-center rounded-xs px-6 text-sm font-semibold"
+        >
+          Request a new link
+        </Link>
+      </div>
     );
   }
 
