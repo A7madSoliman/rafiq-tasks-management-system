@@ -1,12 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-
 import { Button } from '@/components/ui/button';
 import { useCurrentProject } from '../context/current-project-context';
 import { useProjectMembers } from '../hooks/use-project-members';
 import { ProjectMembersList } from './project-members-list';
 import InviteMemberIcon from '@/assets/icons/projects/invite-member.svg';
+import { ProjectMembersLoadingState } from './project-members-loading-state';
+import { ProjectMembersErrorState } from './project-members-error-state';
 
 type ProjectMembersScreenProps = {
   projectId: string;
@@ -14,8 +15,19 @@ type ProjectMembersScreenProps = {
 
 export function ProjectMembersScreen({ projectId }: ProjectMembersScreenProps) {
   const { project } = useCurrentProject();
-  const { members, status } = useProjectMembers(projectId);
+  const { members, status, retry } = useProjectMembers(projectId);
 
+  if (status === 'loading') {
+    return (
+      <div className="mx-auto w-full max-w-[1280px] px-4 py-8 lg:px-8">
+        <ProjectMembersLoadingState />
+      </div>
+    );
+  }
+
+  if (status === 'error') {
+    return <ProjectMembersErrorState onRetry={retry} />;
+  }
   return (
     <div className="mx-auto w-full max-w-[1280px] px-4 py-8 lg:px-8">
       <header>
@@ -58,12 +70,6 @@ export function ProjectMembersScreen({ projectId }: ProjectMembersScreenProps) {
       </header>
 
       <div className="mt-8">
-        {status === 'loading' && <p className="text-center text-sm">Loading members...</p>}
-
-        {status === 'error' && (
-          <p className="text-error text-center text-sm">Failed to load members.</p>
-        )}
-
         {status === 'success' && members.length > 0 && (
           <>
             <ProjectMembersList members={members} />{' '}
