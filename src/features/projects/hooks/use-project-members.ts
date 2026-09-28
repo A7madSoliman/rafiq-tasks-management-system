@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ProjectMember } from '../types/project-member';
-import { isProjectMembers, mapProjectMembers } from '../utils/map-project-members';
+import { isProjectMembers } from '../utils/map-project-members';
 
 type ProjectMembersStatus = 'loading' | 'success' | 'error';
 
@@ -55,6 +55,7 @@ export function useProjectMembers(projectId: string) {
   useEffect(() => {
     const controller = new AbortController();
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadMembers(controller.signal);
 
     return () => {

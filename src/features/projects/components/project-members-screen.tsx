@@ -72,7 +72,7 @@ export function ProjectMembersScreen({ projectId }: ProjectMembersScreenProps) {
       <div className="mt-8">
         {status === 'success' && members.length > 0 && (
           <>
-            <ProjectMembersList members={members} />{' '}
+            <ProjectMembersList members={members} />
             <div className="mt-8 flex justify-end lg:hidden">
               <button
                 type="button"
