@@ -13,29 +13,33 @@ export function useCreateEpic(projectId: string) {
   async function createEpic(values: CreateEpicFormValues) {
     setSubmitError(null);
 
-    const response = await fetch(`/api/projects/${encodeURIComponent(projectId)}/epics`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(values),
-    });
+    try {
+      const response = await fetch(`/api/projects/${encodeURIComponent(projectId)}/epics`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(values),
+      });
 
-    if (response.status === 401) {
-      router.replace('/login');
+      if (response.status === 401) {
+        router.replace('/login');
+        router.refresh();
+        return;
+      }
+
+      if (!response.ok) {
+        setSubmitError('Unable to create epic. Please try again.');
+        return;
+      }
+
+      toast.success('Epic created successfully.');
+
+      router.push(`/project/${encodeURIComponent(projectId)}/epics`);
       router.refresh();
-      return;
-    }
-
-    if (!response.ok) {
+    } catch {
       setSubmitError('Unable to create epic. Please try again.');
-      return;
     }
-
-    toast.success('Epic created successfully.');
-
-    router.push(`/project/${encodeURIComponent(projectId)}/epics`);
-    router.refresh();
   }
 
   return {

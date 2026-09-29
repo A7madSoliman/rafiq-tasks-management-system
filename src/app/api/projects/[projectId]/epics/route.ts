@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { createEpicSchema } from '@/features/epics/schemas/create-epic-schema';
+import { mapProjectMembers } from '@/features/projects/utils/map-project-members';
 
 type CreateEpicRouteContext = {
   params: Promise<{
@@ -39,6 +40,45 @@ export async function POST(request: Request, { params }: CreateEpicRouteContext)
   }
 
   const { title, description, assigneeId, deadline } = result.data;
+
+  if (assigneeId) {
+    const membersResponse = await fetch(
+      `${supabaseUrl}/rest/v1/get_project_members?project_id=eq.${encodeURIComponent(projectId)}`,
+      {
+        method: 'GET',
+        headers: {
+          apikey: supabaseSecretKey,
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        cache: 'no-store',
+      },
+    );
+
+    const membersData: unknown = await membersResponse.json().catch(() => null);
+
+    if (!membersResponse.ok) {
+      return NextResponse.json(
+        { message: 'Unable to validate epic assignee.' },
+        { status: membersResponse.status },
+      );
+    }
+
+    const members = mapProjectMembers(membersData);
+
+    if (!members) {
+      return NextResponse.json({ message: 'Invalid project members response.' }, { status: 502 });
+    }
+
+    const isProjectMember = members.some((member) => member.userId === assigneeId);
+
+    if (!isProjectMember) {
+      return NextResponse.json(
+        { message: 'Assignee must be a member of this project.' },
+        { status: 400 },
+      );
+    }
+  }
 
   const response = await fetch(`${supabaseUrl}/rest/v1/epics`, {
     method: 'POST',
