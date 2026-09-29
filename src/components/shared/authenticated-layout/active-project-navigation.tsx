@@ -95,7 +95,7 @@ export function ActiveProjectNavigation({ isCollapsed, onNavigate }: ActiveProje
         >
           {activeProjectNavigation.map((item) => {
             const href = `/project/${projectId}/${item.segment}`;
-            const isActive = pathname === href;
+            const isActive = pathname === href || pathname.startsWith(`${href}/`);
             const Icon = item.icon;
 
             return (
@@ -174,7 +174,7 @@ export function ActiveProjectNavigation({ isCollapsed, onNavigate }: ActiveProje
           >
             {activeProjectNavigation.map((item) => {
               const href = `/project/${projectId}/${item.segment}`;
-              const isActive = pathname === href;
+              const isActive = pathname === href || pathname.startsWith(`${href}/`);
               const Icon = item.icon;
 
               return (
