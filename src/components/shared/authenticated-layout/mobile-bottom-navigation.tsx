@@ -28,7 +28,10 @@ export function MobileBottomNavigation() {
         {navigationItems.map((item) => {
           const href = item.segment === null ? '/project' : `/project/${projectId}/${item.segment}`;
 
-          const isActive = pathname === href;
+          const isActive =
+            item.segment === null
+              ? pathname === href
+              : pathname === href || pathname.startsWith(`${href}/`);
           const Icon = item.icon;
 
           return (
