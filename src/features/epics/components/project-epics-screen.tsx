@@ -9,6 +9,7 @@ import { useCurrentProject } from '@/features/projects/context/current-project-c
 import { useProjectEpics } from '../hooks/use-project-epics';
 import { ProjectEpicCard } from './project-epic-card';
 import { ProjectEpicsErrorState } from './project-epics-error-state';
+import { ProjectEpicsPagination } from './project-epics-pagination';
 
 type ProjectEpicsScreenProps = {
   projectId: string;
@@ -31,6 +32,7 @@ export function ProjectEpicsScreen({ projectId }: ProjectEpicsScreenProps) {
   if (status === 'success' && epics.length === 0) {
     return <ProjectEpicsEmptyState newEpicHref={newEpicHref} />;
   }
+
   return (
     <div className="mx-auto w-full max-w-[1280px] px-4 py-8 lg:px-8">
       <div className="flex w-full flex-col gap-6 lg:gap-10">
@@ -98,11 +100,15 @@ export function ProjectEpicsScreen({ projectId }: ProjectEpicsScreenProps) {
         </label>
 
         {hasEpics ? (
-          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-6">
-            {epics.map((epic) => (
-              <ProjectEpicCard key={epic.id} epic={epic} />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-6">
+              {epics.map((epic) => (
+                <ProjectEpicCard key={epic.id} epic={epic} />
+              ))}
+            </div>
+
+            <ProjectEpicsPagination />
+          </>
         ) : null}
       </div>
 
