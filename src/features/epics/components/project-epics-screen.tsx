@@ -12,6 +12,7 @@ import { ProjectEpicsErrorState } from './project-epics-error-state';
 import { ProjectEpicsPagination } from './project-epics-pagination';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { EPICS_PAGE_SIZE } from '../constants/epics-pagination';
+import { useEffect, useRef } from 'react';
 
 type ProjectEpicsScreenProps = {
   projectId: string;
@@ -22,16 +23,42 @@ export function ProjectEpicsScreen({ projectId }: ProjectEpicsScreenProps) {
   const searchParams = useSearchParams();
   const pageFromUrl = Number(searchParams.get('page') ?? '1');
   const currentPage = Number.isInteger(pageFromUrl) && pageFromUrl > 0 ? pageFromUrl : 1;
-  const { epics, totalCount, status, retry } = useProjectEpics(projectId, currentPage);
+  const { epics, totalCount, status, hasMore, isLoadingMore, loadMoreError, loadMore, retry } =
+    useProjectEpics(projectId, currentPage);
   const { project } = useCurrentProject();
   const newEpicHref = `/project/${encodeURIComponent(projectId)}/epics/new`;
   const hasEpics = status === 'success' && epics.length > 0;
-
   const totalPages = Math.ceil(totalCount / EPICS_PAGE_SIZE);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   function handlePageChange(page: number) {
     router.push(`/project/${encodeURIComponent(projectId)}/epics?page=${page}`);
   }
+
+  useEffect(() => {
+    const target = loadMoreRef.current;
+
+    if (!target || !hasMore || loadMoreError) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting && !isLoadingMore) {
+          void loadMore();
+        }
+      },
+      {
+        rootMargin: '160px 0px',
+      },
+    );
+
+    observer.observe(target);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [hasMore, isLoadingMore, loadMore, loadMoreError]);
 
   if (status === 'loading') {
     return <ProjectEpicsLoadingState />;
@@ -118,6 +145,22 @@ export function ProjectEpicsScreen({ projectId }: ProjectEpicsScreenProps) {
                 <ProjectEpicCard key={epic.id} epic={epic} />
               ))}
             </div>
+
+            <div ref={loadMoreRef} aria-hidden="true" className="h-px lg:hidden" />
+            {isLoadingMore && (
+              <div
+                role="status"
+                className="text-foreground-secondary py-6 text-center text-sm lg:hidden"
+              >
+                Loading more epics...
+              </div>
+            )}
+
+            {loadMoreError && (
+              <div role="alert" className="text-error py-6 text-center text-sm lg:hidden">
+                Failed to load more epics.
+              </div>
+            )}
 
             <ProjectEpicsPagination
               currentPage={currentPage}
