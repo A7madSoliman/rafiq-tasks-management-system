@@ -1,6 +1,7 @@
-import { createProjectSchema } from '@/features/projects/schemas/create-project-schema';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+
+import { createProjectSchema } from '@/features/projects/schemas/create-project-schema';
 
 export async function GET(request: Request) {
   const cookieStore = await cookies();
@@ -56,16 +57,25 @@ export async function GET(request: Request) {
 
   const data: unknown = await response.json().catch(() => null);
 
-  if (!response.ok) {
-    return NextResponse.json({ message: 'Unable to load projects.' }, { status: response.status });
-  }
-
+  // Important:
+  // Content-Range may still contain useful pagination metadata
+  // even when Supabase returns an error such as 416.
   const contentRange = response.headers.get('content-range');
 
   const responseHeaders = new Headers();
 
   if (contentRange) {
     responseHeaders.set('Content-Range', contentRange);
+  }
+
+  if (!response.ok) {
+    return NextResponse.json(
+      { message: 'Unable to load projects.' },
+      {
+        status: response.status,
+        headers: responseHeaders,
+      },
+    );
   }
 
   return NextResponse.json(data, {

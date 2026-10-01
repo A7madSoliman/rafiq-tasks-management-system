@@ -44,6 +44,15 @@ export function useProjects(currentPage = 1) {
           return;
         }
 
+        const totalCount = parseContentRangeTotal(response.headers.get('content-range'));
+
+        if (response.status === 416 && totalCount !== null) {
+          const lastPage = Math.max(Math.ceil(totalCount / PROJECTS_PAGE_SIZE), 1);
+
+          router.replace(`/project?page=${lastPage}`);
+          return;
+        }
+
         const data: unknown = await response.json().catch(() => null);
 
         if (!response.ok) {
@@ -57,7 +66,6 @@ export function useProjects(currentPage = 1) {
         }
 
         const projects = mapProjects(data);
-        const totalCount = parseContentRangeTotal(response.headers.get('content-range'));
 
         if (!projects || totalCount === null) {
           setState({

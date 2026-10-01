@@ -38,16 +38,14 @@ export default function ProjectPage() {
   }
 
   return (
-    <div className="flex min-h-[calc(100dvh-4rem)] flex-col">
+    <>
       <ProjectsList projects={projects} />
 
-      <div className="mt-auto">
-        <ProjectsPagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={handlePageChange}
-        />
-      </div>
-    </div>
+      <ProjectsPagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={handlePageChange}
+      />
+    </>
   );
 }
