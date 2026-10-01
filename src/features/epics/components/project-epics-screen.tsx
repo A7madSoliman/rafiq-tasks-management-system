@@ -1,25 +1,36 @@
 'use client';
 
 import Link from 'next/link';
-
+import { ProjectEpicsLoadingState } from './project-epics-loading-state';
+import { ProjectEpicsEmptyState } from './project-epics-empty-state';
 import AddIcon from '@/assets/icons/epics/add.svg';
 import SearchIcon from '@/assets/icons/epics/search.svg';
 import { useCurrentProject } from '@/features/projects/context/current-project-context';
-
 import { useProjectEpics } from '../hooks/use-project-epics';
 import { ProjectEpicCard } from './project-epic-card';
+import { ProjectEpicsErrorState } from './project-epics-error-state';
 
 type ProjectEpicsScreenProps = {
   projectId: string;
 };
 
 export function ProjectEpicsScreen({ projectId }: ProjectEpicsScreenProps) {
-  const { epics, status } = useProjectEpics(projectId);
+  const { epics, status, retry } = useProjectEpics(projectId);
   const { project } = useCurrentProject();
-
   const newEpicHref = `/project/${encodeURIComponent(projectId)}/epics/new`;
   const hasEpics = status === 'success' && epics.length > 0;
 
+  if (status === 'loading') {
+    return <ProjectEpicsLoadingState />;
+  }
+
+  if (status === 'error') {
+    return <ProjectEpicsErrorState onRetry={retry} />;
+  }
+
+  if (status === 'success' && epics.length === 0) {
+    return <ProjectEpicsEmptyState newEpicHref={newEpicHref} />;
+  }
   return (
     <div className="mx-auto w-full max-w-[1280px] px-4 py-8 lg:px-8">
       <div className="flex w-full flex-col gap-6 lg:gap-10">
