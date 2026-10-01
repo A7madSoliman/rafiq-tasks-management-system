@@ -23,6 +23,16 @@ function mapEpicUser(value: unknown): EpicUser | null {
   };
 }
 
+function isEpicUser(value: unknown): value is EpicUser {
+  return (
+    isRecord(value) &&
+    typeof value.userId === 'string' &&
+    typeof value.name === 'string' &&
+    typeof value.email === 'string' &&
+    typeof value.department === 'string'
+  );
+}
+
 function isEmptyAssignee(value: unknown): boolean {
   return (
     isRecord(value) &&
@@ -111,4 +121,24 @@ export function mapProjectEpics(value: unknown): ProjectEpic[] | null {
   }
 
   return epics as ProjectEpic[];
+}
+
+export function isProjectEpics(value: unknown): value is ProjectEpic[] {
+  if (!Array.isArray(value)) {
+    return false;
+  }
+
+  return value.every(
+    (epic) =>
+      isRecord(epic) &&
+      typeof epic.id === 'string' &&
+      typeof epic.projectId === 'string' &&
+      typeof epic.epicId === 'string' &&
+      typeof epic.title === 'string' &&
+      (epic.description === null || typeof epic.description === 'string') &&
+      typeof epic.createdAt === 'string' &&
+      (epic.deadline === null || typeof epic.deadline === 'string') &&
+      isEpicUser(epic.createdBy) &&
+      (epic.assignee === null || isEpicUser(epic.assignee)),
+  );
 }

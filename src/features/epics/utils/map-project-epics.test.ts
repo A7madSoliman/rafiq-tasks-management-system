@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-
-import { mapProjectEpics } from './map-project-epics';
+import { isProjectEpics, mapProjectEpics } from './map-project-epics';
 
 describe('mapProjectEpics', () => {
   it('maps a valid project epic response', () => {
@@ -151,5 +150,48 @@ describe('mapProjectEpics', () => {
 
   it('rejects a non-array response', () => {
     expect(mapProjectEpics({})).toBeNull();
+  });
+});
+
+describe('isProjectEpics', () => {
+  it('accepts a valid mapped project epics response', () => {
+    const result = isProjectEpics([
+      {
+        id: 'epic-uuid-1',
+        projectId: 'project-uuid-1',
+        epicId: 'EPIC-1',
+        title: 'Authentication & Security Module',
+        description: null,
+        createdAt: '2026-09-28T16:39:52.751131+00:00',
+        deadline: '2026-12-31',
+        createdBy: {
+          userId: 'creator-user-id',
+          name: 'Ahmad Soliman Dev',
+          email: 'ahmad@example.com',
+          department: 'Frontend',
+        },
+        assignee: null,
+      },
+    ]);
+
+    expect(result).toBe(true);
+  });
+
+  it('rejects an invalid mapped project epics response', () => {
+    const result = isProjectEpics([
+      {
+        id: 'epic-uuid-1',
+        projectId: 'project-uuid-1',
+        epicId: 'EPIC-1',
+        title: 'Authentication & Security Module',
+        description: null,
+        createdAt: '2026-09-28T16:39:52.751131+00:00',
+        deadline: '2026-12-31',
+        createdBy: null,
+        assignee: null,
+      },
+    ]);
+
+    expect(result).toBe(false);
   });
 });
