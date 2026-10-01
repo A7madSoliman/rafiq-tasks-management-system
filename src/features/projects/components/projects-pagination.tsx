@@ -2,6 +2,8 @@ import NextIcon from '@/assets/icons/projects/pagination-next.svg';
 import PreviousIcon from '@/assets/icons/projects/pagination-previous.svg';
 import { cn } from '@/lib/cn';
 
+import { getPaginationItems } from '../utils/get-pagination-items';
+
 type ProjectsPaginationProps = {
   currentPage: number;
   totalPages: number;
@@ -13,58 +15,76 @@ export function ProjectsPagination({
   totalPages,
   onPageChange,
 }: ProjectsPaginationProps) {
-  const pageNumbers = Array.from({ length: totalPages }, (_, index) => index + 1);
   if (totalPages <= 1) {
     return null;
   }
+
+  const paginationItems = getPaginationItems(currentPage, totalPages);
+
   return (
-    <nav aria-label="Projects pagination" className="hidden w-full justify-end p-8 lg:flex">
-      <div className="flex items-center gap-2">
-        <button
-          disabled={currentPage === 1}
-          onClick={() => onPageChange(currentPage - 1)}
-          type="button"
-          aria-label="Previous page"
-          className={cn(
-            'border-outline/30 flex size-8 cursor-pointer items-center justify-center rounded-xs border',
-            currentPage === 1 && 'cursor-not-allowed opacity-40',
-          )}
-        >
-          <PreviousIcon aria-hidden="true" className="h-[7px] w-[5px]" />
-        </button>
+    <nav aria-label="Projects pagination" className="hidden w-full px-6 py-8 md:block lg:px-8">
+      <div className="mx-auto flex w-full max-w-[1280px] justify-end">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            disabled={currentPage === 1}
+            onClick={() => onPageChange(currentPage - 1)}
+            aria-label="Previous page"
+            className={cn(
+              'border-outline/30 flex size-8 items-center justify-center rounded-xs border',
+              currentPage === 1 ? 'cursor-not-allowed' : 'cursor-pointer',
+            )}
+          >
+            <PreviousIcon aria-hidden="true" />
+          </button>
 
-        {pageNumbers.map((page) => {
-          const isCurrentPage = page === currentPage;
+          {paginationItems.map((item) => {
+            if (typeof item !== 'number') {
+              return (
+                <span
+                  key={item}
+                  aria-hidden="true"
+                  className="text-foreground-secondary border-outline/30 flex size-8 items-center justify-center rounded-xs border text-xs leading-4 font-bold"
+                >
+                  ...
+                </span>
+              );
+            }
 
-          return (
-            <button
-              key={page}
-              type="button"
-              onClick={() => onPageChange(page)}
-              aria-current={isCurrentPage ? 'page' : undefined}
-              aria-label={`Page ${page}`}
-              className={cn(
-                'text-foreground-secondary border-outline/30 flex size-8 cursor-pointer items-center justify-center rounded-xs border text-xs font-bold',
-                isCurrentPage && 'bg-primary text-on-primary',
-              )}
-            >
-              {page}
-            </button>
-          );
-        })}
+            const isCurrentPage = item === currentPage;
 
-        <button
-          type="button"
-          disabled={currentPage === totalPages}
-          onClick={() => onPageChange(currentPage + 1)}
-          aria-label="Next page"
-          className={cn(
-            'border-outline/30 flex size-8 cursor-pointer items-center justify-center rounded-xs border',
-            currentPage === totalPages && 'cursor-not-allowed opacity-40',
-          )}
-        >
-          <NextIcon aria-hidden="true" className="h-[7px] w-[5px]" />
-        </button>
+            return (
+              <button
+                key={item}
+                type="button"
+                onClick={() => onPageChange(item)}
+                aria-current={isCurrentPage ? 'page' : undefined}
+                aria-label={`Page ${item}`}
+                className={cn(
+                  'border-outline/30 flex size-8 items-center justify-center rounded-xs border text-xs leading-4 font-bold',
+                  isCurrentPage
+                    ? 'bg-primary text-on-primary'
+                    : 'text-foreground-secondary cursor-pointer',
+                )}
+              >
+                {item}
+              </button>
+            );
+          })}
+
+          <button
+            type="button"
+            disabled={currentPage === totalPages}
+            onClick={() => onPageChange(currentPage + 1)}
+            aria-label="Next page"
+            className={cn(
+              'border-outline/30 flex size-8 items-center justify-center rounded-xs border',
+              currentPage === totalPages ? 'cursor-not-allowed' : 'cursor-pointer',
+            )}
+          >
+            <NextIcon aria-hidden="true" />
+          </button>
+        </div>
       </div>
     </nav>
   );

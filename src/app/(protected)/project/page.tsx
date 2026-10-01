@@ -1,50 +1,41 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ProjectsEmptyState } from '@/features/projects/components/projects-empty-state';
 import { ProjectsErrorState } from '@/features/projects/components/projects-error-state';
 import { ProjectsList } from '@/features/projects/components/projects-list';
 import { ProjectsLoadingState } from '@/features/projects/components/projects-loading-state';
 import { ProjectsPagination } from '@/features/projects/components/projects-pagination';
+import { PROJECTS_PAGE_SIZE } from '@/features/projects/constants/projects-pagination';
 import { useProjects } from '@/features/projects/hooks/use-projects';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
-
-const DESKTOP_PROJECTS_PER_PAGE = 5;
-const MOBILE_PROJECTS_BATCH_SIZE = 5;
 
 export default function ProjectPage() {
-  const [mobileVisibleCount, setMobileVisibleCount] = useState(MOBILE_PROJECTS_BATCH_SIZE);
-  const loadMoreRef = useRef<HTMLDivElement>(null);
-  const { projects, status, retry } = useProjects();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
-  const totalPages = Math.ceil(projects.length / DESKTOP_PROJECTS_PER_PAGE);
   const pageFromUrl = Number(searchParams.get('page') ?? '1');
+
   const currentPage = Number.isInteger(pageFromUrl) && pageFromUrl > 0 ? pageFromUrl : 1;
-  const safeCurrentPage = Math.min(currentPage, Math.max(totalPages, 1));
-  const startIndex = (safeCurrentPage - 1) * DESKTOP_PROJECTS_PER_PAGE;
-  const endIndex = startIndex + DESKTOP_PROJECTS_PER_PAGE;
-  const desktopProjects = projects.slice(startIndex, endIndex);
-  const mobileProjects = projects.slice(0, mobileVisibleCount);
-  const hasMoreMobileProjects = mobileVisibleCount < projects.length;
+
+  const { projects, totalCount, status, hasMore, isLoadingMore, loadMoreError, loadMore, retry } =
+    useProjects(currentPage);
+
+  const totalPages = Math.ceil(totalCount / PROJECTS_PAGE_SIZE);
 
   useEffect(() => {
     const target = loadMoreRef.current;
 
-    if (!target || !hasMoreMobileProjects) {
+    if (!target || !hasMore || loadMoreError) {
       return;
     }
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (!entry.isIntersecting) {
-          return;
+        if (entry?.isIntersecting && !isLoadingMore) {
+          void loadMore();
         }
-
-        setMobileVisibleCount((current) =>
-          Math.min(current + MOBILE_PROJECTS_BATCH_SIZE, projects.length),
-        );
       },
       {
         rootMargin: '160px 0px',
@@ -56,7 +47,7 @@ export default function ProjectPage() {
     return () => {
       observer.disconnect();
     };
-  }, [hasMoreMobileProjects, projects.length]);
+  }, [hasMore, isLoadingMore, loadMore, loadMoreError]);
 
   function handlePageChange(page: number) {
     router.push(`/project?page=${page}`);
@@ -73,22 +64,30 @@ export default function ProjectPage() {
   if (projects.length === 0) {
     return <ProjectsEmptyState />;
   }
+
   return (
     <>
-      <div className="flex min-h-[calc(100dvh-4rem)] flex-col">
-        <ProjectsList desktopProjects={desktopProjects} mobileProjects={mobileProjects} />
+      <ProjectsList projects={projects} />
 
-        {hasMoreMobileProjects && (
-          <div ref={loadMoreRef} aria-hidden="true" className="h-1 lg:hidden" />
-        )}
-        <div className="mt-auto">
-          <ProjectsPagination
-            currentPage={safeCurrentPage}
-            totalPages={totalPages}
-            onPageChange={handlePageChange}
-          />
+      <div ref={loadMoreRef} aria-hidden="true" className="h-px md:hidden" />
+
+      {isLoadingMore && (
+        <div role="status" className="text-foreground-secondary py-6 text-center text-sm md:hidden">
+          Loading more projects...
         </div>
-      </div>
+      )}
+
+      {loadMoreError && (
+        <div role="alert" className="text-error py-6 text-center text-sm md:hidden">
+          Failed to load more projects.
+        </div>
+      )}
+
+      <ProjectsPagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={handlePageChange}
+      />
     </>
   );
 }

@@ -6,11 +6,10 @@ import type { Project } from '../types/project';
 import { ProjectCard } from './project-card';
 
 type ProjectsListProps = {
-  desktopProjects: Project[];
-  mobileProjects: Project[];
+  projects: Project[];
 };
 
-export function ProjectsList({ desktopProjects, mobileProjects }: ProjectsListProps) {
+export function ProjectsList({ projects }: ProjectsListProps) {
   return (
     <section className="w-full px-6 py-6 lg:px-8 lg:py-8">
       <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-6 lg:gap-10">
@@ -21,7 +20,7 @@ export function ProjectsList({ desktopProjects, mobileProjects }: ProjectsListPr
             </h1>
 
             <p className="text-foreground-secondary text-base leading-6">
-              Manage and curate your projects
+              Manage and create your projects
             </p>
           </div>
 
@@ -34,12 +33,12 @@ export function ProjectsList({ desktopProjects, mobileProjects }: ProjectsListPr
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 lg:hidden">
-          {mobileProjects.map((project) => (
+          {projects.map((project) => (
             <ProjectCard key={project.id} project={project} />
           ))}
         </div>
         <div className="hidden grid-cols-3 gap-6 lg:grid">
-          {desktopProjects.map((project) => (
+          {projects.map((project) => (
             <ProjectCard key={project.id} project={project} />
           ))}
 

@@ -7,8 +7,8 @@ type ProjectsErrorStateProps = {
 
 export function ProjectsErrorState({ onRetry }: ProjectsErrorStateProps) {
   return (
-    <section className="flex min-h-[calc(100dvh-8rem)] items-center justify-center px-6 py-12 lg:min-h-[calc(100dvh-4rem)]">
-      <div className="flex w-full max-w-sm flex-col items-center text-center">
+    <section className="flex min-h-[calc(100dvh-8rem)] w-full items-center justify-center px-6 py-12 lg:min-h-[calc(100dvh-4rem)]">
+      <div className="flex w-full max-w-[384px] flex-col items-center text-center">
         <div className="bg-error-container flex size-16 items-center justify-center rounded-[12px]">
           <ErrorStateIcon aria-hidden="true" className="h-[25px] w-[28px]" />
         </div>
@@ -25,7 +25,7 @@ export function ProjectsErrorState({ onRetry }: ProjectsErrorStateProps) {
         <Button
           type="button"
           onClick={onRetry}
-          className="mt-6 px-6 py-[10px] text-base leading-6 font-semibold"
+          className="mt-6 px-6 py-[10px] text-base leading-6 font-semibold whitespace-nowrap"
         >
           Retry Connection
         </Button>

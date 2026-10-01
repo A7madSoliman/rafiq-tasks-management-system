@@ -10,7 +10,7 @@ type ProjectEpicsRouteContext = {
   }>;
 };
 
-export async function GET(_request: Request, { params }: ProjectEpicsRouteContext) {
+export async function GET(request: Request, { params }: ProjectEpicsRouteContext) {
   const { projectId } = await params;
 
   const cookieStore = await cookies();
@@ -27,25 +27,62 @@ export async function GET(_request: Request, { params }: ProjectEpicsRouteContex
     return NextResponse.json({ message: 'Server configuration error.' }, { status: 500 });
   }
 
-  const response = await fetch(
-    `${supabaseUrl}/rest/v1/project_epics?project_id=eq.${encodeURIComponent(projectId)}`,
-    {
-      method: 'GET',
-      headers: {
-        apikey: supabaseSecretKey,
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      cache: 'no-store',
+  const { searchParams } = new URL(request.url);
+
+  const limitParam = searchParams.get('limit');
+  const offsetParam = searchParams.get('offset');
+
+  const limit = limitParam === null ? null : Number(limitParam);
+  const offset = offsetParam === null ? null : Number(offsetParam);
+
+  const hasInvalidLimit = limit !== null && (!Number.isInteger(limit) || limit <= 0);
+
+  const hasInvalidOffset = offset !== null && (!Number.isInteger(offset) || offset < 0);
+
+  if (hasInvalidLimit || hasInvalidOffset) {
+    return NextResponse.json({ message: 'Invalid pagination parameters.' }, { status: 400 });
+  }
+
+  const epicsUrl = new URL('/rest/v1/project_epics', supabaseUrl);
+
+  epicsUrl.searchParams.set('project_id', `eq.${projectId}`);
+
+  if (limit !== null) {
+    epicsUrl.searchParams.set('limit', String(limit));
+  }
+
+  if (offset !== null) {
+    epicsUrl.searchParams.set('offset', String(offset));
+  }
+
+  const response = await fetch(epicsUrl, {
+    method: 'GET',
+    headers: {
+      apikey: supabaseSecretKey,
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+      Prefer: 'count=exact',
     },
-  );
+    cache: 'no-store',
+  });
 
   const data: unknown = await response.json().catch(() => null);
+
+  const contentRange = response.headers.get('content-range');
+
+  const responseHeaders = new Headers();
+
+  if (contentRange) {
+    responseHeaders.set('Content-Range', contentRange);
+  }
 
   if (!response.ok) {
     return NextResponse.json(
       { message: 'Unable to load project epics.' },
-      { status: response.status },
+      {
+        status: response.status,
+        headers: responseHeaders,
+      },
     );
   }
 
@@ -56,10 +93,10 @@ export async function GET(_request: Request, { params }: ProjectEpicsRouteContex
   }
 
   return NextResponse.json(epics, {
-    status: 200,
+    status: response.status,
+    headers: responseHeaders,
   });
 }
-
 export async function POST(request: Request, { params }: ProjectEpicsRouteContext) {
   const { projectId } = await params;
 
