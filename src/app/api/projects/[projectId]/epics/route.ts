@@ -2,14 +2,65 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { createEpicSchema } from '@/features/epics/schemas/create-epic-schema';
 import { mapProjectMembers } from '@/features/projects/utils/map-project-members';
+import { mapProjectEpics } from '@/features/epics/utils/map-project-epics';
 
-type CreateEpicRouteContext = {
+type ProjectEpicsRouteContext = {
   params: Promise<{
     projectId: string;
   }>;
 };
 
-export async function POST(request: Request, { params }: CreateEpicRouteContext) {
+export async function GET(_request: Request, { params }: ProjectEpicsRouteContext) {
+  const { projectId } = await params;
+
+  const cookieStore = await cookies();
+  const accessToken = cookieStore.get('access_token')?.value;
+
+  if (!accessToken) {
+    return NextResponse.json({ message: 'No active session.' }, { status: 401 });
+  }
+
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY;
+
+  if (!supabaseUrl || !supabaseSecretKey) {
+    return NextResponse.json({ message: 'Server configuration error.' }, { status: 500 });
+  }
+
+  const response = await fetch(
+    `${supabaseUrl}/rest/v1/project_epics?project_id=eq.${encodeURIComponent(projectId)}`,
+    {
+      method: 'GET',
+      headers: {
+        apikey: supabaseSecretKey,
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      cache: 'no-store',
+    },
+  );
+
+  const data: unknown = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    return NextResponse.json(
+      { message: 'Unable to load project epics.' },
+      { status: response.status },
+    );
+  }
+
+  const epics = mapProjectEpics(data);
+
+  if (!epics) {
+    return NextResponse.json({ message: 'Invalid project epics response.' }, { status: 502 });
+  }
+
+  return NextResponse.json(epics, {
+    status: 200,
+  });
+}
+
+export async function POST(request: Request, { params }: ProjectEpicsRouteContext) {
   const { projectId } = await params;
 
   const cookieStore = await cookies();
