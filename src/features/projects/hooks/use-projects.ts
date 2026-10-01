@@ -1,22 +1,41 @@
 'use client';
+
 import { useCallback, useEffect, useState } from 'react';
-import { Project } from '../types/project';
-import { mapProjects } from '../utils/map-projects';
 import { useRouter } from 'next/navigation';
+
+import { PROJECTS_PAGE_SIZE } from '../constants/projects-pagination';
+import type { Project } from '../types/project';
+import { mapProjects } from '../utils/map-projects';
+import { parseContentRangeTotal } from '../utils/parse-content-range';
 
 type ProjectsStatus = 'loading' | 'success' | 'error';
 
-export function useProjects() {
+type ProjectsState = {
+  page: number;
+  projects: Project[];
+  totalCount: number;
+  status: ProjectsStatus;
+};
+
+export function useProjects(currentPage = 1) {
   const router = useRouter();
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [status, setStatus] = useState<ProjectsStatus>('loading');
+
+  const [state, setState] = useState<ProjectsState>({
+    page: currentPage,
+    projects: [],
+    totalCount: 0,
+    status: 'loading',
+  });
 
   const loadProjects = useCallback(
-    async (signal?: AbortSignal) => {
+    async (page: number, signal?: AbortSignal) => {
+      const offset = (page - 1) * PROJECTS_PAGE_SIZE;
+
       try {
-        const response = await fetch('/api/projects', {
+        const response = await fetch(`/api/projects?limit=${PROJECTS_PAGE_SIZE}&offset=${offset}`, {
           method: 'GET',
-          signal: signal,
+          signal,
+          cache: 'no-store',
         });
 
         if (response.status === 401) {
@@ -25,25 +44,48 @@ export function useProjects() {
           return;
         }
 
+        const data: unknown = await response.json().catch(() => null);
+
         if (!response.ok) {
-          setStatus('error');
+          setState({
+            page,
+            projects: [],
+            totalCount: 0,
+            status: 'error',
+          });
           return;
         }
 
-        const data: unknown = await response.json();
-        const mappedProjects = mapProjects(data);
+        const projects = mapProjects(data);
+        const totalCount = parseContentRangeTotal(response.headers.get('content-range'));
 
-        if (!mappedProjects) {
-          setStatus('error');
+        if (!projects || totalCount === null) {
+          setState({
+            page,
+            projects: [],
+            totalCount: 0,
+            status: 'error',
+          });
           return;
         }
-        setProjects(mappedProjects);
-        setStatus('success');
+
+        setState({
+          page,
+          projects,
+          totalCount,
+          status: 'success',
+        });
       } catch (error) {
         if (error instanceof DOMException && error.name === 'AbortError') {
           return;
         }
-        setStatus('error');
+
+        setState({
+          page,
+          projects: [],
+          totalCount: 0,
+          status: 'error',
+        });
       }
     },
     [router],
@@ -51,21 +93,32 @@ export function useProjects() {
 
   useEffect(() => {
     const controller = new AbortController();
+
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    void loadProjects(controller.signal);
+    void loadProjects(currentPage, controller.signal);
 
     return () => {
       controller.abort();
     };
-  }, [loadProjects]);
+  }, [currentPage, loadProjects]);
+
+  const isCurrentPage = state.page === currentPage;
 
   function retry() {
-    setStatus('loading');
-    void loadProjects();
+    setState({
+      page: currentPage,
+      projects: [],
+      totalCount: 0,
+      status: 'loading',
+    });
+
+    void loadProjects(currentPage);
   }
+
   return {
-    projects,
-    status,
+    projects: isCurrentPage ? state.projects : [],
+    totalCount: isCurrentPage ? state.totalCount : 0,
+    status: isCurrentPage ? state.status : 'loading',
     retry,
   };
 }
