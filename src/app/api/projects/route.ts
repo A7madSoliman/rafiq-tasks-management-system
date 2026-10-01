@@ -2,7 +2,7 @@ import { createProjectSchema } from '@/features/projects/schemas/create-project-
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
-export async function GET() {
+export async function GET(request: Request) {
   const cookieStore = await cookies();
   const accessToken = cookieStore.get('access_token')?.value;
 
@@ -17,23 +17,60 @@ export async function GET() {
     return NextResponse.json({ message: 'Server configuration error.' }, { status: 500 });
   }
 
-  const response = await fetch(`${supabaseUrl}/rest/v1/rpc/get_projects`, {
+  const { searchParams } = new URL(request.url);
+
+  const limitParam = searchParams.get('limit');
+  const offsetParam = searchParams.get('offset');
+
+  const limit = limitParam === null ? null : Number(limitParam);
+  const offset = offsetParam === null ? null : Number(offsetParam);
+
+  const hasInvalidLimit = limit !== null && (!Number.isInteger(limit) || limit <= 0);
+
+  const hasInvalidOffset = offset !== null && (!Number.isInteger(offset) || offset < 0);
+
+  if (hasInvalidLimit || hasInvalidOffset) {
+    return NextResponse.json({ message: 'Invalid pagination parameters.' }, { status: 400 });
+  }
+
+  const projectsUrl = new URL('/rest/v1/rpc/get_projects', supabaseUrl);
+
+  if (limit !== null) {
+    projectsUrl.searchParams.set('limit', String(limit));
+  }
+
+  if (offset !== null) {
+    projectsUrl.searchParams.set('offset', String(offset));
+  }
+
+  const response = await fetch(projectsUrl, {
     method: 'GET',
     headers: {
       apikey: supabaseSecretKey,
       Authorization: `Bearer ${accessToken}`,
       'Content-Type': 'application/json',
+      Prefer: 'count=exact',
     },
     cache: 'no-store',
   });
 
   const data: unknown = await response.json().catch(() => null);
+
   if (!response.ok) {
     return NextResponse.json({ message: 'Unable to load projects.' }, { status: response.status });
   }
 
+  const contentRange = response.headers.get('content-range');
+
+  const responseHeaders = new Headers();
+
+  if (contentRange) {
+    responseHeaders.set('Content-Range', contentRange);
+  }
+
   return NextResponse.json(data, {
-    status: 200,
+    status: response.status,
+    headers: responseHeaders,
   });
 }
 
