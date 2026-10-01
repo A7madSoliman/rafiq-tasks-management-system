@@ -10,16 +10,28 @@ import { useProjectEpics } from '../hooks/use-project-epics';
 import { ProjectEpicCard } from './project-epic-card';
 import { ProjectEpicsErrorState } from './project-epics-error-state';
 import { ProjectEpicsPagination } from './project-epics-pagination';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { EPICS_PAGE_SIZE } from '../constants/epics-pagination';
 
 type ProjectEpicsScreenProps = {
   projectId: string;
 };
 
 export function ProjectEpicsScreen({ projectId }: ProjectEpicsScreenProps) {
-  const { epics, status, retry } = useProjectEpics(projectId);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pageFromUrl = Number(searchParams.get('page') ?? '1');
+  const currentPage = Number.isInteger(pageFromUrl) && pageFromUrl > 0 ? pageFromUrl : 1;
+  const { epics, totalCount, status, retry } = useProjectEpics(projectId, currentPage);
   const { project } = useCurrentProject();
   const newEpicHref = `/project/${encodeURIComponent(projectId)}/epics/new`;
   const hasEpics = status === 'success' && epics.length > 0;
+
+  const totalPages = Math.ceil(totalCount / EPICS_PAGE_SIZE);
+
+  function handlePageChange(page: number) {
+    router.push(`/project/${encodeURIComponent(projectId)}/epics?page=${page}`);
+  }
 
   if (status === 'loading') {
     return <ProjectEpicsLoadingState />;
@@ -107,7 +119,11 @@ export function ProjectEpicsScreen({ projectId }: ProjectEpicsScreenProps) {
               ))}
             </div>
 
-            <ProjectEpicsPagination />
+            <ProjectEpicsPagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
           </>
         ) : null}
       </div>
