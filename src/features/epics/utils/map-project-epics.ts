@@ -123,22 +123,21 @@ export function mapProjectEpics(value: unknown): ProjectEpic[] | null {
   return epics as ProjectEpic[];
 }
 
-export function isProjectEpics(value: unknown): value is ProjectEpic[] {
-  if (!Array.isArray(value)) {
-    return false;
-  }
-
-  return value.every(
-    (epic) =>
-      isRecord(epic) &&
-      typeof epic.id === 'string' &&
-      typeof epic.projectId === 'string' &&
-      typeof epic.epicId === 'string' &&
-      typeof epic.title === 'string' &&
-      (epic.description === null || typeof epic.description === 'string') &&
-      typeof epic.createdAt === 'string' &&
-      (epic.deadline === null || typeof epic.deadline === 'string') &&
-      isEpicUser(epic.createdBy) &&
-      (epic.assignee === null || isEpicUser(epic.assignee)),
+export function isProjectEpic(value: unknown): value is ProjectEpic {
+  return (
+    isRecord(value) &&
+    typeof value.id === 'string' &&
+    typeof value.projectId === 'string' &&
+    typeof value.epicId === 'string' &&
+    typeof value.title === 'string' &&
+    (value.description === null || typeof value.description === 'string') &&
+    typeof value.createdAt === 'string' &&
+    (value.deadline === null || typeof value.deadline === 'string') &&
+    isEpicUser(value.createdBy) &&
+    (value.assignee === null || isEpicUser(value.assignee))
   );
+}
+
+export function isProjectEpics(value: unknown): value is ProjectEpic[] {
+  return Array.isArray(value) && value.every(isProjectEpic);
 }
