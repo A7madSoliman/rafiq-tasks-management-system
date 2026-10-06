@@ -5,6 +5,7 @@ import DeadlineIcon from '@/assets/icons/epics/deadline.svg';
 
 type ProjectEpicCardProps = {
   epic: ProjectEpic;
+  onSelect: (epicId: string) => void;
 };
 
 function getInitials(name: string): string {
@@ -16,12 +17,12 @@ function getInitials(name: string): string {
     .join('');
 }
 
-export function ProjectEpicCard({ epic }: ProjectEpicCardProps) {
+export function ProjectEpicCard({ epic, onSelect }: ProjectEpicCardProps) {
   const assigneeName = epic.assignee?.name ?? 'Unassigned';
   const assigneeInitials = epic.assignee ? getInitials(epic.assignee.name) : '—';
 
   return (
-    <article className="bg-surface border-primary flex min-h-[205px] flex-col rounded-md border-l-4 px-4 py-4 pl-5 shadow-sm lg:min-h-[209px]">
+    <article className="bg-surface border-primary focus-within:ring-primary relative flex min-h-[205px] cursor-pointer flex-col rounded-md border-l-4 px-4 py-4 pl-5 shadow-sm focus-within:ring-2 lg:min-h-[209px]">
       <div className="pb-4">
         <span className="bg-surface-highest text-primary inline-flex rounded-[2px] px-[10px] py-1 text-[10px] leading-[15px] font-bold tracking-[0.5px]">
           {epic.epicId}
@@ -58,6 +59,14 @@ export function ProjectEpicCard({ epic }: ProjectEpicCardProps) {
           </div>
         </div>
       </div>
+      <button
+        type="button"
+        onClick={() => onSelect(epic.id)}
+        aria-label={`View details for ${epic.title}`}
+        className="absolute inset-0 rounded-md"
+      >
+        <span className="sr-only">View epic details</span>
+      </button>
     </article>
   );
 }
