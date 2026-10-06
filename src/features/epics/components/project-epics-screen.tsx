@@ -12,7 +12,9 @@ import { ProjectEpicsErrorState } from './project-epics-error-state';
 import { ProjectEpicsPagination } from './project-epics-pagination';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { EPICS_PAGE_SIZE } from '../constants/epics-pagination';
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEpicDetails } from '../hooks/use-epic-details';
+import { EpicDetailsModal } from './epic-details-modal';
 
 type ProjectEpicsScreenProps = {
   projectId: string;
@@ -21,10 +23,16 @@ type ProjectEpicsScreenProps = {
 export function ProjectEpicsScreen({ projectId }: ProjectEpicsScreenProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [selectedEpicId, setSelectedEpicId] = useState<string | null>(null);
   const pageFromUrl = Number(searchParams.get('page') ?? '1');
   const currentPage = Number.isInteger(pageFromUrl) && pageFromUrl > 0 ? pageFromUrl : 1;
   const { epics, totalCount, status, hasMore, isLoadingMore, loadMoreError, loadMore, retry } =
     useProjectEpics(projectId, currentPage);
+  const {
+    epic: selectedEpic,
+    status: epicDetailsStatus,
+    errorMessage: epicDetailsErrorMessage,
+  } = useEpicDetails(projectId, selectedEpicId);
   const { project } = useCurrentProject();
   const newEpicHref = `/project/${encodeURIComponent(projectId)}/epics/new`;
   const hasEpics = status === 'success' && epics.length > 0;
@@ -34,6 +42,14 @@ export function ProjectEpicsScreen({ projectId }: ProjectEpicsScreenProps) {
   function handlePageChange(page: number) {
     router.push(`/project/${encodeURIComponent(projectId)}/epics?page=${page}`);
   }
+
+  const handleSelectEpic = useCallback((epicId: string) => {
+    setSelectedEpicId(epicId);
+  }, []);
+
+  const handleCloseEpicDetails = useCallback(() => {
+    setSelectedEpicId(null);
+  }, []);
 
   useEffect(() => {
     const target = loadMoreRef.current;
@@ -142,7 +158,7 @@ export function ProjectEpicsScreen({ projectId }: ProjectEpicsScreenProps) {
           <>
             <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-6">
               {epics.map((epic) => (
-                <ProjectEpicCard key={epic.id} epic={epic} />
+                <ProjectEpicCard key={epic.id} epic={epic} onSelect={handleSelectEpic} />
               ))}
             </div>
 
@@ -178,6 +194,14 @@ export function ProjectEpicsScreen({ projectId }: ProjectEpicsScreenProps) {
       >
         <AddIcon aria-hidden="true" />
       </Link>
+
+      <EpicDetailsModal
+        isOpen={selectedEpicId !== null}
+        epic={selectedEpic}
+        status={epicDetailsStatus === 'idle' ? 'loading' : epicDetailsStatus}
+        errorMessage={epicDetailsErrorMessage}
+        onClose={handleCloseEpicDetails}
+      />
     </div>
   );
 }
