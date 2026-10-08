@@ -43,6 +43,20 @@ function EpicCardSkeleton() {
   );
 }
 
+export function ProjectEpicsListLoadingState() {
+  return (
+    <div role="status">
+      <span className="sr-only">Searching epics...</span>
+
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-6">
+        {Array.from({ length: 6 }, (_, index) => (
+          <EpicCardSkeleton key={index} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function ProjectEpicsLoadingState() {
   return (
     <div className="mx-auto w-full max-w-[1280px] px-4 py-8 lg:px-8">

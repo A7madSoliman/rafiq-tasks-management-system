@@ -20,10 +20,12 @@ type ProjectEpicsState = {
   status: ProjectEpicsStatus;
   isLoadingMore: boolean;
   loadMoreError: boolean;
+  searchTerm: string;
 };
 
-export function useProjectEpics(projectId: string, currentPage = 1) {
+export function useProjectEpics(projectId: string, currentPage = 1, searchTerm = '') {
   const router = useRouter();
+  const normalizedSearchTerm = searchTerm.trim();
 
   const [state, setState] = useState<ProjectEpicsState>({
     projectId,
@@ -34,6 +36,7 @@ export function useProjectEpics(projectId: string, currentPage = 1) {
     status: 'loading',
     isLoadingMore: false,
     loadMoreError: false,
+    searchTerm: normalizedSearchTerm,
   });
 
   const loadMoreInFlightRef = useRef(false);
@@ -42,9 +45,18 @@ export function useProjectEpics(projectId: string, currentPage = 1) {
     async (page: number, signal?: AbortSignal) => {
       const offset = (page - 1) * EPICS_PAGE_SIZE;
 
+      const requestParams = new URLSearchParams({
+        limit: String(EPICS_PAGE_SIZE),
+        offset: String(offset),
+      });
+
+      if (normalizedSearchTerm) {
+        requestParams.set('search', normalizedSearchTerm);
+      }
+
       try {
         const response = await fetch(
-          `/api/projects/${encodeURIComponent(projectId)}/epics?limit=${EPICS_PAGE_SIZE}&offset=${offset}`,
+          `/api/projects/${encodeURIComponent(projectId)}/epics?${requestParams.toString()}`,
           {
             method: 'GET',
             signal,
@@ -63,7 +75,17 @@ export function useProjectEpics(projectId: string, currentPage = 1) {
         if (response.status === 416 && totalCount !== null) {
           const lastPage = Math.max(Math.ceil(totalCount / EPICS_PAGE_SIZE), 1);
 
-          router.replace(`/project/${encodeURIComponent(projectId)}/epics?page=${lastPage}`);
+          const redirectParams = new URLSearchParams({
+            page: String(lastPage),
+          });
+
+          if (normalizedSearchTerm) {
+            redirectParams.set('search', normalizedSearchTerm);
+          }
+
+          router.replace(
+            `/project/${encodeURIComponent(projectId)}/epics?${redirectParams.toString()}`,
+          );
 
           return;
         }
@@ -80,6 +102,7 @@ export function useProjectEpics(projectId: string, currentPage = 1) {
             status: 'error',
             isLoadingMore: false,
             loadMoreError: false,
+            searchTerm: normalizedSearchTerm,
           });
 
           return;
@@ -94,6 +117,7 @@ export function useProjectEpics(projectId: string, currentPage = 1) {
           status: 'success',
           isLoadingMore: false,
           loadMoreError: false,
+          searchTerm: normalizedSearchTerm,
         });
       } catch (error) {
         if (error instanceof DOMException && error.name === 'AbortError') {
@@ -109,10 +133,11 @@ export function useProjectEpics(projectId: string, currentPage = 1) {
           status: 'error',
           isLoadingMore: false,
           loadMoreError: false,
+          searchTerm: normalizedSearchTerm,
         });
       }
     },
-    [projectId, router],
+    [projectId, router, normalizedSearchTerm],
   );
 
   useEffect(() => {
@@ -126,17 +151,20 @@ export function useProjectEpics(projectId: string, currentPage = 1) {
     };
   }, [currentPage, loadEpics]);
 
-  const isCurrentPage = state.projectId === projectId && state.page === currentPage;
+  const isCurrentQuery =
+    state.projectId === projectId &&
+    state.page === currentPage &&
+    state.searchTerm === normalizedSearchTerm;
 
   const hasMore =
-    isCurrentPage &&
+    isCurrentQuery &&
     state.status === 'success' &&
     state.epics.length < state.totalCount &&
     state.nextOffset < state.totalCount;
 
   const loadMore = useCallback(async () => {
     if (
-      !isCurrentPage ||
+      !isCurrentQuery ||
       state.status !== 'success' ||
       state.isLoadingMore ||
       state.loadMoreError ||
@@ -152,7 +180,11 @@ export function useProjectEpics(projectId: string, currentPage = 1) {
     loadMoreInFlightRef.current = true;
 
     setState((current) => {
-      if (current.projectId !== projectId || current.page !== currentPage) {
+      if (
+        current.projectId !== projectId ||
+        current.page !== currentPage ||
+        current.searchTerm !== normalizedSearchTerm
+      ) {
         return current;
       }
 
@@ -164,8 +196,17 @@ export function useProjectEpics(projectId: string, currentPage = 1) {
     });
 
     try {
+      const requestParams = new URLSearchParams({
+        limit: String(EPICS_PAGE_SIZE),
+        offset: String(offset),
+      });
+
+      if (normalizedSearchTerm) {
+        requestParams.set('search', normalizedSearchTerm);
+      }
+
       const response = await fetch(
-        `/api/projects/${encodeURIComponent(projectId)}/epics?limit=${EPICS_PAGE_SIZE}&offset=${offset}`,
+        `/api/projects/${encodeURIComponent(projectId)}/epics?${requestParams.toString()}`,
         {
           method: 'GET',
           cache: 'no-store',
@@ -182,7 +223,11 @@ export function useProjectEpics(projectId: string, currentPage = 1) {
 
       if (response.status === 416 && totalCount !== null) {
         setState((current) => {
-          if (current.projectId !== projectId || current.page !== currentPage) {
+          if (
+            current.projectId !== projectId ||
+            current.page !== currentPage ||
+            current.searchTerm !== normalizedSearchTerm
+          ) {
             return current;
           }
 
@@ -201,7 +246,11 @@ export function useProjectEpics(projectId: string, currentPage = 1) {
 
       if (!response.ok || !isProjectEpics(data) || totalCount === null) {
         setState((current) => {
-          if (current.projectId !== projectId || current.page !== currentPage) {
+          if (
+            current.projectId !== projectId ||
+            current.page !== currentPage ||
+            current.searchTerm !== normalizedSearchTerm
+          ) {
             return current;
           }
 
@@ -215,7 +264,11 @@ export function useProjectEpics(projectId: string, currentPage = 1) {
       }
 
       setState((current) => {
-        if (current.projectId !== projectId || current.page !== currentPage) {
+        if (
+          current.projectId !== projectId ||
+          current.page !== currentPage ||
+          current.searchTerm !== normalizedSearchTerm
+        ) {
           return current;
         }
 
@@ -233,7 +286,11 @@ export function useProjectEpics(projectId: string, currentPage = 1) {
       });
     } catch {
       setState((current) => {
-        if (current.projectId !== projectId || current.page !== currentPage) {
+        if (
+          current.projectId !== projectId ||
+          current.page !== currentPage ||
+          current.searchTerm !== normalizedSearchTerm
+        ) {
           return current;
         }
 
@@ -246,7 +303,11 @@ export function useProjectEpics(projectId: string, currentPage = 1) {
       loadMoreInFlightRef.current = false;
 
       setState((current) => {
-        if (current.projectId !== projectId || current.page !== currentPage) {
+        if (
+          current.projectId !== projectId ||
+          current.page !== currentPage ||
+          current.searchTerm !== normalizedSearchTerm
+        ) {
           return current;
         }
 
@@ -258,7 +319,7 @@ export function useProjectEpics(projectId: string, currentPage = 1) {
     }
   }, [
     currentPage,
-    isCurrentPage,
+    isCurrentQuery,
     projectId,
     router,
     state.epics.length,
@@ -267,6 +328,7 @@ export function useProjectEpics(projectId: string, currentPage = 1) {
     state.nextOffset,
     state.status,
     state.totalCount,
+    normalizedSearchTerm,
   ]);
 
   function retry() {
@@ -279,18 +341,19 @@ export function useProjectEpics(projectId: string, currentPage = 1) {
       status: 'loading',
       isLoadingMore: false,
       loadMoreError: false,
+      searchTerm: normalizedSearchTerm,
     });
 
     void loadEpics(currentPage);
   }
 
   return {
-    epics: isCurrentPage ? state.epics : [],
-    totalCount: isCurrentPage ? state.totalCount : 0,
-    status: isCurrentPage ? state.status : 'loading',
+    epics: isCurrentQuery ? state.epics : [],
+    totalCount: isCurrentQuery ? state.totalCount : 0,
+    status: isCurrentQuery ? state.status : 'loading',
     hasMore,
-    isLoadingMore: isCurrentPage ? state.isLoadingMore : false,
-    loadMoreError: isCurrentPage ? state.loadMoreError : false,
+    isLoadingMore: isCurrentQuery ? state.isLoadingMore : false,
+    loadMoreError: isCurrentQuery ? state.loadMoreError : false,
     loadMore,
     retry,
   };
