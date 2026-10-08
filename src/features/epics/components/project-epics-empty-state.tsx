@@ -42,7 +42,7 @@ export function ProjectEpicsEmptyState({ newEpicHref }: ProjectEpicsEmptyStatePr
         </div>
 
         <h1 className="text-foreground text-[30px] leading-9 font-semibold tracking-[-0.75px]">
-          No epics in this project yet.
+          No epics found for this project
         </h1>
 
         <p className="text-foreground-secondary max-w-[448px] text-base leading-7 lg:text-lg lg:leading-[29.25px]">

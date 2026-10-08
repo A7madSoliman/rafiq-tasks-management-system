@@ -1,7 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { ProjectEpicsLoadingState } from './project-epics-loading-state';
+import {
+  ProjectEpicsListLoadingState,
+  ProjectEpicsLoadingState,
+} from './project-epics-loading-state';
 import { ProjectEpicsEmptyState } from './project-epics-empty-state';
 import AddIcon from '@/assets/icons/epics/add.svg';
 import SearchIcon from '@/assets/icons/epics/search.svg';
@@ -23,11 +26,13 @@ type ProjectEpicsScreenProps = {
 export function ProjectEpicsScreen({ projectId }: ProjectEpicsScreenProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const searchTerm = searchParams.get('search')?.trim() ?? '';
+  const [searchInput, setSearchInput] = useState(searchTerm);
   const [selectedEpicId, setSelectedEpicId] = useState<string | null>(null);
   const pageFromUrl = Number(searchParams.get('page') ?? '1');
   const currentPage = Number.isInteger(pageFromUrl) && pageFromUrl > 0 ? pageFromUrl : 1;
   const { epics, totalCount, status, hasMore, isLoadingMore, loadMoreError, loadMore, retry } =
-    useProjectEpics(projectId, currentPage);
+    useProjectEpics(projectId, currentPage, searchTerm);
   const {
     epic: selectedEpic,
     status: epicDetailsStatus,
@@ -36,11 +41,22 @@ export function ProjectEpicsScreen({ projectId }: ProjectEpicsScreenProps) {
   const { project } = useCurrentProject();
   const newEpicHref = `/project/${encodeURIComponent(projectId)}/epics/new`;
   const hasEpics = status === 'success' && epics.length > 0;
+  const hasActiveSearch = searchTerm.length > 0;
+  const isSearchLoading = hasActiveSearch && status === 'loading';
+  const isSearchError = hasActiveSearch && status === 'error';
+  const isSearchEmpty = hasActiveSearch && status === 'success' && epics.length === 0;
   const totalPages = Math.ceil(totalCount / EPICS_PAGE_SIZE);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   function handlePageChange(page: number) {
-    router.push(`/project/${encodeURIComponent(projectId)}/epics?page=${page}`);
+    const params = new URLSearchParams(searchParams.toString());
+
+    params.set('page', String(page));
+
+    const query = params.toString();
+    const pathname = `/project/${encodeURIComponent(projectId)}/epics`;
+
+    router.replace(query ? `${pathname}?${query}` : pathname);
   }
 
   const handleSelectEpic = useCallback((epicId: string) => {
@@ -50,6 +66,37 @@ export function ProjectEpicsScreen({ projectId }: ProjectEpicsScreenProps) {
   const handleCloseEpicDetails = useCallback(() => {
     setSelectedEpicId(null);
   }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSearchInput(searchTerm);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      const normalizedSearchInput = searchInput.trim();
+
+      if (normalizedSearchInput === searchTerm) {
+        return;
+      }
+
+      const params = new URLSearchParams(searchParams.toString());
+
+      if (normalizedSearchInput) {
+        params.set('search', normalizedSearchInput);
+      } else {
+        params.delete('search');
+      }
+
+      params.delete('page');
+
+      router.replace(`/project/${encodeURIComponent(projectId)}/epics?${params.toString()}`);
+    }, 300);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [projectId, router, searchInput, searchParams, searchTerm]);
 
   useEffect(() => {
     const target = loadMoreRef.current;
@@ -76,15 +123,15 @@ export function ProjectEpicsScreen({ projectId }: ProjectEpicsScreenProps) {
     };
   }, [hasMore, isLoadingMore, loadMore, loadMoreError]);
 
-  if (status === 'loading') {
+  if (!hasActiveSearch && status === 'loading') {
     return <ProjectEpicsLoadingState />;
   }
 
-  if (status === 'error') {
+  if (!hasActiveSearch && status === 'error') {
     return <ProjectEpicsErrorState onRetry={retry} />;
   }
 
-  if (status === 'success' && epics.length === 0) {
+  if (!hasActiveSearch && status === 'success' && epics.length === 0) {
     return <ProjectEpicsEmptyState newEpicHref={newEpicHref} />;
   }
 
@@ -125,7 +172,8 @@ export function ProjectEpicsScreen({ projectId }: ProjectEpicsScreenProps) {
 
               <input
                 type="search"
-                readOnly
+                value={searchInput}
+                onChange={(event) => setSearchInput(event.target.value)}
                 aria-label="Search epics"
                 placeholder="Search epics..."
                 className="text-foreground placeholder:text-foreground-subtle min-w-0 flex-1 bg-transparent text-sm outline-none"
@@ -147,14 +195,38 @@ export function ProjectEpicsScreen({ projectId }: ProjectEpicsScreenProps) {
 
           <input
             type="search"
-            readOnly
+            value={searchInput}
+            onChange={(event) => setSearchInput(event.target.value)}
             aria-label="Search epics"
-            placeholder="Search Epics..."
+            placeholder="Search epics..."
             className="text-foreground placeholder:text-foreground-subtle min-w-0 flex-1 bg-transparent text-sm outline-none"
           />
         </label>
 
-        {hasEpics ? (
+        {isSearchLoading ? (
+          <ProjectEpicsListLoadingState />
+        ) : isSearchError ? (
+          <div
+            role="alert"
+            className="flex min-h-[220px] flex-col items-center justify-center gap-4 text-center"
+          >
+            <p className="text-error text-base font-medium">Failed to search epics</p>
+
+            <button
+              type="button"
+              onClick={retry}
+              className="bg-primary text-on-primary rounded-xs px-6 py-[10px] text-sm font-semibold"
+            >
+              Retry
+            </button>
+          </div>
+        ) : isSearchEmpty ? (
+          <div className="flex min-h-[220px] items-center justify-center text-center">
+            <p className="text-foreground-secondary text-base font-medium">
+              No epics found matching your search
+            </p>
+          </div>
+        ) : hasEpics ? (
           <>
             <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-6">
               {epics.map((epic) => (
@@ -163,6 +235,7 @@ export function ProjectEpicsScreen({ projectId }: ProjectEpicsScreenProps) {
             </div>
 
             <div ref={loadMoreRef} aria-hidden="true" className="h-px lg:hidden" />
+
             {isLoadingMore && (
               <div
                 role="status"
