@@ -31,6 +31,7 @@ export async function GET(request: Request, { params }: ProjectEpicsRouteContext
 
   const limitParam = searchParams.get('limit');
   const offsetParam = searchParams.get('offset');
+  const searchTerm = searchParams.get('search')?.trim() ?? '';
 
   const limit = limitParam === null ? null : Number(limitParam);
   const offset = offsetParam === null ? null : Number(offsetParam);
@@ -46,6 +47,10 @@ export async function GET(request: Request, { params }: ProjectEpicsRouteContext
   const epicsUrl = new URL('/rest/v1/project_epics', supabaseUrl);
 
   epicsUrl.searchParams.set('project_id', `eq.${projectId}`);
+
+  if (searchTerm) {
+    epicsUrl.searchParams.set('title', `ilike.%${searchTerm}%`);
+  }
 
   if (limit !== null) {
     epicsUrl.searchParams.set('limit', String(limit));
