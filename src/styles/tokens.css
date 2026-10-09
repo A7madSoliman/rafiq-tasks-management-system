@@ -30,6 +30,13 @@
 
   --color-warning: #ffb300;
 
+  /* Task board */
+  --color-task-status-todo: #94a3b8;
+  --color-task-status-qa: #0c56d0;
+  --color-task-status-production: #004e32;
+  --color-task-status-done: #65dca4;
+  --color-task-status-label: #64748b;
+
   /* Typography */
   --font-sans: var(--font-inter);
 
