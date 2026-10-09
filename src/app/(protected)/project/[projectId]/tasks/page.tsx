@@ -1,17 +1,5 @@
-type ProjectTasksPageProps = {
-  params: Promise<{
-    projectId: string;
-  }>;
-};
+import { ProjectTasksBoardScreen } from '@/features/tasks/components/project-tasks-board-screen';
 
-export default async function ProjectTasksPage({ params }: ProjectTasksPageProps) {
-  const { projectId } = await params;
-
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold">Tasks</h1>
-
-      <p className="text-foreground-muted mt-2 text-sm">Project ID: {projectId}</p>
-    </div>
-  );
+export default function ProjectTasksPage() {
+  return <ProjectTasksBoardScreen />;
 }

@@ -1,6 +1,5 @@
 import AddTaskIcon from '@/assets/icons/tasks/add-task.svg';
 import NoTasksIcon from '@/assets/icons/tasks/no-tasks.svg';
-import NoItemsIcon from '@/assets/icons/tasks/no-items.svg';
 
 import { cn } from '@/lib/cn';
 import { TASK_STATUSES, type TaskStatus } from '../constants/task-statuses';
@@ -51,17 +50,8 @@ const STATUS_STYLES: Record<
   },
 };
 
-const STATUSES_WITH_ADD_ACTION = new Set<TaskStatus>([
-  'TO_DO',
-  'IN_PROGRESS',
-  'BLOCKED',
-  'IN_REVIEW',
-]);
-
 export function TaskBoardColumn({ status, count }: TaskBoardColumnProps) {
   const styles = STATUS_STYLES[status.value];
-  const showAddAction = STATUSES_WITH_ADD_ACTION.has(status.value);
-  const isQaStatus = status.value === 'READY_FOR_QA';
 
   return (
     <section
@@ -89,21 +79,19 @@ export function TaskBoardColumn({ status, count }: TaskBoardColumnProps) {
       </header>
 
       <div className="flex min-h-0 flex-1 flex-col gap-3">
-        {showAddAction && (
-          <button
-            type="button"
-            className="border-outline/30 text-foreground-secondary/60 flex h-[52px] w-full shrink-0 items-center justify-center gap-2 rounded-md border-2 border-dashed text-xs leading-4 font-bold tracking-[1.2px] uppercase"
-          >
-            <AddTaskIcon aria-hidden="true" />
-            <span>Add New Task</span>
-          </button>
-        )}
+        <button
+          type="button"
+          className="border-outline/30 text-foreground-secondary/60 flex h-[52px] w-full shrink-0 items-center justify-center gap-2 rounded-md border-2 border-dashed text-xs leading-4 font-bold tracking-[1.2px] uppercase"
+        >
+          <AddTaskIcon aria-hidden="true" />
+          <span>Add New Task</span>
+        </button>
 
         <div className="bg-surface-low/30 border-outline/30 flex min-h-[240px] flex-1 flex-col items-center justify-center gap-3 rounded-md border border-dashed text-center">
-          {isQaStatus ? <NoItemsIcon aria-hidden="true" /> : <NoTasksIcon aria-hidden="true" />}
+          <NoTasksIcon aria-hidden="true" />
 
           <p className="text-task-status-todo text-[11px] leading-[16.5px] font-bold tracking-[1.1px] uppercase">
-            {isQaStatus ? 'No Items' : 'No Tasks'}
+            No Tasks
           </p>
         </div>
       </div>
