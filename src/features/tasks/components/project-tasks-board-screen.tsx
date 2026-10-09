@@ -1,15 +1,15 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-
 import { TASK_STATUSES } from '../constants/task-statuses';
-
 import { CreateTaskDialog } from './create-task-dialog';
 import { TaskBoardColumn } from './task-board-column';
 import { TaskBoardDesktopHeader } from './task-board-desktop-header';
 import { TaskBoardMobileEmptyState } from './task-board-mobile-empty-state';
+import { useCurrentProject } from '@/features/projects/context/current-project-context';
 
 export function ProjectTasksBoardScreen() {
+  const { projectId } = useCurrentProject();
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
 
   const handleOpenCreateTask = useCallback(() => {
@@ -46,7 +46,13 @@ export function ProjectTasksBoardScreen() {
 
       <TaskBoardMobileEmptyState onAddTask={handleOpenCreateTask} />
 
-      <CreateTaskDialog isOpen={isCreateTaskOpen} onClose={handleCloseCreateTask} />
+      {projectId && (
+        <CreateTaskDialog
+          projectId={projectId}
+          isOpen={isCreateTaskOpen}
+          onClose={handleCloseCreateTask}
+        />
+      )}
     </div>
   );
 }

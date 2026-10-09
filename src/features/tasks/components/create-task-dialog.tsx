@@ -4,15 +4,21 @@ import { CreateTaskModal } from './create-task-modal';
 import { CreateTaskForm } from './create-task-form';
 
 type CreateTaskDialogProps = {
+  projectId: string;
   isOpen: boolean;
   onClose: () => void;
   initialEpicId?: string | null;
 };
 
-export function CreateTaskDialog({ isOpen, onClose, initialEpicId = null }: CreateTaskDialogProps) {
+export function CreateTaskDialog({
+  projectId,
+  isOpen,
+  onClose,
+  initialEpicId = null,
+}: CreateTaskDialogProps) {
   return (
     <CreateTaskModal isOpen={isOpen} onClose={onClose}>
-      <CreateTaskForm onClose={onClose} initialEpicId={initialEpicId} />
+      <CreateTaskForm projectId={projectId} onClose={onClose} initialEpicId={initialEpicId} />
     </CreateTaskModal>
   );
 }

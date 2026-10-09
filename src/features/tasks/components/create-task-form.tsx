@@ -11,8 +11,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { TASK_STATUSES } from '../constants/task-statuses';
 import { createTaskSchema, type CreateTaskFormValues } from '../schemas/create-task-schema';
 import { useRef } from 'react';
+import { useProjectMembers } from '@/features/projects/hooks/use-project-members';
+import { useTaskEpics } from '../hooks/use-task-epics';
 
 type CreateTaskFormProps = {
+  projectId: string;
   onClose: () => void;
   initialEpicId?: string | null;
 };
@@ -40,7 +43,12 @@ function formatDueDate(value: string): string {
   }).format(date);
 }
 
-export function CreateTaskForm({ onClose, initialEpicId = null }: CreateTaskFormProps) {
+function formatEpicTitle(title: string): string {
+  return title.length > 100 ? `${title.slice(0, 97)}...` : title;
+}
+export function CreateTaskForm({ onClose, initialEpicId = null, projectId }: CreateTaskFormProps) {
+  const { epics, status: epicsStatus, retry: retryEpics } = useTaskEpics(projectId);
+  const { members, status: membersStatus, retry: retryMembers } = useProjectMembers(projectId);
   const dueDateInputRef = useRef<HTMLInputElement | null>(null);
   const {
     register,
@@ -169,12 +177,43 @@ export function CreateTaskForm({ onClose, initialEpicId = null }: CreateTaskForm
           <FieldLabel htmlFor="task-assignee">Assignee</FieldLabel>
 
           <div className="relative">
-            <select id="task-assignee" className={selectClassName} {...register('assigneeId')}>
-              <option value="">Select Team Member</option>
+            <select
+              id="task-assignee"
+              className={selectClassName}
+              aria-invalid={Boolean(errors.assigneeId)}
+              aria-busy={membersStatus === 'loading'}
+              {...register('assigneeId')}
+            >
+              <option value="">
+                {membersStatus === 'loading'
+                  ? 'Loading members...'
+                  : membersStatus === 'error'
+                    ? 'Unable to load members'
+                    : members.length === 0
+                      ? 'No members available'
+                      : 'Select Team Member'}
+              </option>
+
+              {membersStatus === 'success' &&
+                members.map((member) => (
+                  <option key={member.id} value={member.userId}>
+                    {member.name} — {member.email}
+                  </option>
+                ))}
             </select>
 
             <SelectChevron />
           </div>
+
+          {membersStatus === 'error' && (
+            <button
+              type="button"
+              onClick={retryMembers}
+              className="text-primary w-fit cursor-pointer text-xs font-medium"
+            >
+              Retry loading members
+            </button>
+          )}
 
           {errors.assigneeId && (
             <p role="alert" className="text-error text-xs">
@@ -188,12 +227,44 @@ export function CreateTaskForm({ onClose, initialEpicId = null }: CreateTaskForm
           <FieldLabel htmlFor="task-epic">Epic</FieldLabel>
 
           <div className="relative">
-            <select id="task-epic" className={selectClassName} {...register('epicId')}>
-              <option value="">Select Epic</option>
+            <select
+              id="task-epic"
+              className={selectClassName}
+              disabled={epicsStatus !== 'success'}
+              aria-busy={epicsStatus === 'loading'}
+              aria-invalid={Boolean(errors.epicId)}
+              {...register('epicId')}
+            >
+              <option value="">
+                {epicsStatus === 'loading'
+                  ? 'Loading epics...'
+                  : epicsStatus === 'error'
+                    ? 'Unable to load epics'
+                    : epics.length === 0
+                      ? 'No epics available'
+                      : 'Select Epic'}
+              </option>
+
+              {epicsStatus === 'success' &&
+                epics.map((epic) => (
+                  <option key={epic.id} value={epic.id}>
+                    {epic.epicId} {formatEpicTitle(epic.title)}
+                  </option>
+                ))}
             </select>
 
             <SelectChevron />
           </div>
+
+          {epicsStatus === 'error' && (
+            <button
+              type="button"
+              onClick={retryEpics}
+              className="text-primary w-fit cursor-pointer text-xs font-medium"
+            >
+              Retry loading epics
+            </button>
+          )}
 
           {errors.epicId && (
             <p role="alert" className="text-error text-xs">
