@@ -3,7 +3,11 @@ import MobileAddTaskIcon from '@/assets/icons/tasks/mobile-add-task.svg';
 import NoTasksIcon from '@/assets/icons/tasks/no-tasks.svg';
 import { Button } from '@/components/ui/button';
 
-export function TaskBoardMobileEmptyState() {
+type TaskBoardMobileEmptyStateProps = {
+  onAddTask: () => void;
+};
+
+export function TaskBoardMobileEmptyState({ onAddTask }: TaskBoardMobileEmptyStateProps) {
   return (
     <section
       aria-label="Tasks board empty state"
@@ -28,7 +32,8 @@ export function TaskBoardMobileEmptyState() {
 
         <Button
           type="button"
-          className="h-8 w-full gap-2 rounded-sm px-4 py-0 text-xs font-bold tracking-[1.2px] uppercase"
+          onClick={onAddTask}
+          className="h-8 w-full cursor-pointer gap-2 rounded-sm px-4 py-0 text-xs font-bold tracking-[1.2px] uppercase"
         >
           <MobileAddTaskIcon aria-hidden="true" />
           <span>Add New Task</span>

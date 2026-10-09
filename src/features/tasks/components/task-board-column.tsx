@@ -7,6 +7,7 @@ import { TASK_STATUSES, type TaskStatus } from '../constants/task-statuses';
 type TaskBoardColumnProps = {
   status: (typeof TASK_STATUSES)[number];
   count: number;
+  onAddTask: () => void;
 };
 
 const STATUS_STYLES: Record<
@@ -50,7 +51,7 @@ const STATUS_STYLES: Record<
   },
 };
 
-export function TaskBoardColumn({ status, count }: TaskBoardColumnProps) {
+export function TaskBoardColumn({ status, count, onAddTask }: TaskBoardColumnProps) {
   const styles = STATUS_STYLES[status.value];
 
   return (
@@ -81,6 +82,7 @@ export function TaskBoardColumn({ status, count }: TaskBoardColumnProps) {
       <div className="flex min-h-0 flex-1 flex-col gap-3">
         <button
           type="button"
+          onClick={onAddTask}
           className="border-outline/30 text-foreground-secondary/60 flex h-[52px] w-full shrink-0 items-center justify-center gap-2 rounded-md border-2 border-dashed text-xs leading-4 font-bold tracking-[1.2px] uppercase"
         >
           <AddTaskIcon aria-hidden="true" />
