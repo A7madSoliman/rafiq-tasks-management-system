@@ -19,24 +19,37 @@ export function CreateTaskModal({
 }: CreateTaskModalProps) {
   const dialogRef = useRef<HTMLElement>(null);
 
+  const isSubmittingRef = useRef(isSubmitting);
+  const onCloseRef = useRef(onClose);
+
+  // Keep the latest values without restarting focus management.
+  useEffect(() => {
+    isSubmittingRef.current = isSubmitting;
+    onCloseRef.current = onClose;
+  }, [isSubmitting, onClose]);
+
   useEffect(() => {
     if (!isOpen) return;
 
     const previousOverflow = document.body.style.overflow;
+
     const previouslyFocusedElement =
       document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
-        if (!isSubmitting) {
-          event.preventDefault();
-          onClose();
+        event.preventDefault();
+
+        if (!isSubmittingRef.current) {
+          onCloseRef.current();
         }
 
         return;
       }
 
-      if (event.key !== 'Tab' || !dialogRef.current) return;
+      if (event.key !== 'Tab' || !dialogRef.current) {
+        return;
+      }
 
       const dialog = dialogRef.current;
 
@@ -65,18 +78,23 @@ export function CreateTaskModal({
     }
 
     document.body.style.overflow = 'hidden';
+
     document.addEventListener('keydown', handleKeyDown);
 
     dialogRef.current?.focus();
 
     return () => {
       document.body.style.overflow = previousOverflow;
+
       document.removeEventListener('keydown', handleKeyDown);
+
       previouslyFocusedElement?.focus();
     };
-  }, [isOpen, isSubmitting, onClose]);
+  }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center md:p-6">
@@ -104,14 +122,14 @@ export function CreateTaskModal({
               onClick={onClose}
               disabled={isSubmitting}
               aria-label="Close create task"
-              className="flex size-[30px] items-center justify-center rounded-[12px]"
+              className="flex size-[30px] items-center justify-center rounded-[12px] disabled:cursor-not-allowed disabled:opacity-50"
             >
               <CloseIcon aria-hidden="true" />
             </button>
           </div>
         </div>
 
-        {/* Form content will be added in the next step */}
+        {/* Task form */}
         <div className="min-h-0 flex-1">{children}</div>
       </section>
     </div>

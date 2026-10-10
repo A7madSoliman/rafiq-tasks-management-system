@@ -5,6 +5,7 @@ import { mapProjectMembers } from '@/features/projects/utils/map-project-members
 import { createTaskSchema } from '@/features/tasks/schemas/create-task-schema';
 import { canCreateTask } from '@/features/tasks/utils/can-create-task';
 import { verifyAccessToken } from '@/lib/auth/session';
+import { createdTaskSchema } from '@/features/tasks/schemas/created-task-schema';
 
 type TasksRouteContext = {
   params: Promise<{
@@ -281,5 +282,178 @@ export async function POST(request: Request, { params }: TasksRouteContext) {
       { message: 'Unable to process task creation request.' },
       { status: 502 },
     );
+  }
+}
+
+export async function GET(request: Request, { params }: TasksRouteContext) {
+  const { projectId } = await params;
+
+  if (!z.uuid().safeParse(projectId).success) {
+    return NextResponse.json({ message: 'Invalid project ID.' }, { status: 400 });
+  }
+
+  const requestUrl = new URL(request.url);
+
+  const limitParam = requestUrl.searchParams.get('limit');
+  const offsetParam = requestUrl.searchParams.get('offset');
+
+  const limit = limitParam === null ? 100 : Number(limitParam);
+  const offset = offsetParam === null ? 0 : Number(offsetParam);
+
+  if (
+    !Number.isSafeInteger(limit) ||
+    limit < 1 ||
+    limit > 100 ||
+    !Number.isSafeInteger(offset) ||
+    offset < 0
+  ) {
+    return NextResponse.json({ message: 'Invalid pagination parameters.' }, { status: 400 });
+  }
+
+  const cookieStore = await cookies();
+  const accessToken = cookieStore.get('access_token')?.value;
+
+  if (!accessToken) {
+    return NextResponse.json({ message: 'No active session.' }, { status: 401 });
+  }
+
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY;
+
+  if (!supabaseUrl || !supabaseSecretKey) {
+    return NextResponse.json({ message: 'Server configuration error.' }, { status: 500 });
+  }
+
+  try {
+    const user = await verifyAccessToken(accessToken);
+
+    if (!user) {
+      return NextResponse.json({ message: 'Invalid or expired session.' }, { status: 401 });
+    }
+
+    const headers = {
+      apikey: supabaseSecretKey,
+      Authorization: `Bearer ${accessToken}`,
+    };
+
+    // Verify the project exists.
+    const projectUrl = new URL('/rest/v1/projects', supabaseUrl);
+
+    projectUrl.searchParams.set('id', `eq.${projectId}`);
+    projectUrl.searchParams.set('select', 'id,created_by');
+    projectUrl.searchParams.set('limit', '1');
+
+    const projectResponse = await fetch(projectUrl, {
+      method: 'GET',
+      headers,
+      cache: 'no-store',
+    });
+
+    if (!projectResponse.ok) {
+      return NextResponse.json({ message: 'Unable to verify project access.' }, { status: 502 });
+    }
+
+    const projectData: unknown = await projectResponse.json().catch(() => null);
+
+    if (!Array.isArray(projectData)) {
+      return NextResponse.json({ message: 'Invalid project response.' }, { status: 502 });
+    }
+
+    if (projectData.length === 0) {
+      return NextResponse.json({ message: 'Project not found.' }, { status: 404 });
+    }
+
+    const project: unknown = projectData[0];
+
+    if (!isProjectOwnership(project) || project.id !== projectId) {
+      return NextResponse.json({ message: 'Invalid project response.' }, { status: 502 });
+    }
+
+    // Verify membership. Viewers are allowed to read tasks.
+    const membersUrl = new URL('/rest/v1/get_project_members', supabaseUrl);
+
+    membersUrl.searchParams.set('project_id', `eq.${projectId}`);
+
+    const membersResponse = await fetch(membersUrl, {
+      method: 'GET',
+      headers,
+      cache: 'no-store',
+    });
+
+    if (!membersResponse.ok) {
+      return NextResponse.json(
+        { message: 'Unable to verify project membership.' },
+        { status: 502 },
+      );
+    }
+
+    const membersData: unknown = await membersResponse.json().catch(() => null);
+
+    const members = mapProjectMembers(membersData);
+
+    if (!members) {
+      return NextResponse.json({ message: 'Invalid project members response.' }, { status: 502 });
+    }
+
+    const isProjectCreator = project.created_by === user.id;
+    const isProjectMember = members.some((member) => member.userId === user.id);
+
+    if (!isProjectCreator && !isProjectMember) {
+      return NextResponse.json(
+        { message: 'You do not have permission to view tasks.' },
+        { status: 403 },
+      );
+    }
+
+    // Load only tasks belonging to the requested project.
+    const tasksUrl = new URL('/rest/v1/tasks', supabaseUrl);
+
+    tasksUrl.searchParams.set('project_id', `eq.${projectId}`);
+    tasksUrl.searchParams.set(
+      'select',
+      'id,task_id,project_id,title,description,epic_id,assignee_id,due_date,status',
+    );
+    tasksUrl.searchParams.set('order', 'created_at.desc,id.desc');
+    tasksUrl.searchParams.set('limit', String(limit));
+    tasksUrl.searchParams.set('offset', String(offset));
+
+    const tasksResponse = await fetch(tasksUrl, {
+      method: 'GET',
+      headers: {
+        ...headers,
+        Prefer: 'count=exact',
+      },
+      cache: 'no-store',
+    });
+
+    if (!tasksResponse.ok) {
+      return NextResponse.json({ message: 'Unable to load project tasks.' }, { status: 502 });
+    }
+
+    const tasksData: unknown = await tasksResponse.json().catch(() => null);
+
+    const parsedTasks = createdTaskSchema.array().safeParse(tasksData);
+
+    if (!parsedTasks.success) {
+      return NextResponse.json({ message: 'Invalid project tasks response.' }, { status: 502 });
+    }
+
+    if (parsedTasks.data.some((task) => task.project_id !== projectId)) {
+      return NextResponse.json({ message: 'Invalid project tasks response.' }, { status: 502 });
+    }
+
+    const responseHeaders = new Headers();
+    const contentRange = tasksResponse.headers.get('content-range');
+
+    if (contentRange) {
+      responseHeaders.set('Content-Range', contentRange);
+    }
+
+    return NextResponse.json(parsedTasks.data, {
+      status: 200,
+      headers: responseHeaders,
+    });
+  } catch {
+    return NextResponse.json({ message: 'Unable to load project tasks.' }, { status: 502 });
   }
 }

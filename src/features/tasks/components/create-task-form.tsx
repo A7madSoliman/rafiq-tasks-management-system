@@ -8,16 +8,23 @@ import { Button } from '@/components/ui/button';
 import { FieldLabel } from '@/components/ui/field-label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { TASK_STATUSES } from '../constants/task-statuses';
+import { TASK_STATUSES, type TaskStatus } from '../constants/task-statuses';
 import { createTaskSchema, type CreateTaskFormValues } from '../schemas/create-task-schema';
 import { useRef } from 'react';
 import { useProjectMembers } from '@/features/projects/hooks/use-project-members';
 import { useTaskEpics } from '../hooks/use-task-epics';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { createTaskResponseSchema, type CreatedTask } from '../schemas/created-task-schema';
 
 type CreateTaskFormProps = {
   projectId: string;
   onClose: () => void;
   initialEpicId?: string | null;
+  onCreated?: (task: CreatedTask) => void;
+  initialStatus?: TaskStatus;
+  onSubmittingChange?: (isSubmitting: boolean) => void;
 };
 
 const selectClassName =
@@ -46,15 +53,25 @@ function formatDueDate(value: string): string {
 function formatEpicTitle(title: string): string {
   return title.length > 100 ? `${title.slice(0, 97)}...` : title;
 }
-export function CreateTaskForm({ onClose, initialEpicId = null, projectId }: CreateTaskFormProps) {
+export function CreateTaskForm({
+  onClose,
+  initialEpicId = null,
+  projectId,
+  onCreated,
+  initialStatus = 'TO_DO',
+  onSubmittingChange,
+}: CreateTaskFormProps) {
+  const router = useRouter();
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const { epics, status: epicsStatus, retry: retryEpics } = useTaskEpics(projectId);
   const { members, status: membersStatus, retry: retryMembers } = useProjectMembers(projectId);
   const dueDateInputRef = useRef<HTMLInputElement | null>(null);
+
   const {
     register,
     handleSubmit,
     control,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<CreateTaskFormValues>({
     resolver: zodResolver(createTaskSchema),
     mode: 'onTouched',
@@ -62,7 +79,7 @@ export function CreateTaskForm({ onClose, initialEpicId = null, projectId }: Cre
     defaultValues: {
       title: '',
       description: '',
-      status: 'TO_DO',
+      status: initialStatus,
       assigneeId: '',
       epicId: initialEpicId ?? '',
       dueDate: '',
@@ -89,10 +106,62 @@ export function CreateTaskForm({ onClose, initialEpicId = null, projectId }: Cre
     }
   }
 
+  async function onSubmit(values: CreateTaskFormValues) {
+    onSubmittingChange?.(true);
+    setSubmitError(null);
+
+    try {
+      const response = await fetch(`/api/projects/${encodeURIComponent(projectId)}/tasks`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(values),
+      });
+
+      if (response.status === 401) {
+        router.replace('/login');
+        router.refresh();
+        return;
+      }
+
+      const data: unknown = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        const message =
+          typeof data === 'object' &&
+          data !== null &&
+          'message' in data &&
+          typeof data.message === 'string'
+            ? data.message
+            : 'Unable to create task. Please try again.';
+
+        setSubmitError(message);
+        return;
+      }
+
+      const result = createTaskResponseSchema.safeParse(data);
+
+      if (!result.success || result.data.task.project_id !== projectId) {
+        setSubmitError('Task may have been created. Please check the board before trying again.');
+        return;
+      }
+
+      onCreated?.(result.data.task);
+
+      toast.success('Task created successfully.');
+      onClose();
+    } catch {
+      setSubmitError('Unable to create task. Please try again.');
+    } finally {
+      onSubmittingChange?.(false);
+    }
+  }
+
   return (
     <form
       noValidate
-      onSubmit={handleSubmit(() => undefined)}
+      onSubmit={handleSubmit(onSubmit)}
       className="flex h-full min-h-0 flex-col overflow-y-auto md:grid md:grid-cols-[minmax(0,1fr)_320px] md:grid-rows-[auto_minmax(0,1fr)_auto] md:overflow-hidden"
     >
       {/* Title */}
@@ -116,6 +185,12 @@ export function CreateTaskForm({ onClose, initialEpicId = null, projectId }: Cre
           {errors.title && (
             <p role="alert" className="text-error text-xs">
               {errors.title.message}
+            </p>
+          )}
+
+          {submitError && (
+            <p role="alert" className="text-error text-xs">
+              {submitError}
             </p>
           )}
         </div>
@@ -326,6 +401,7 @@ export function CreateTaskForm({ onClose, initialEpicId = null, projectId }: Cre
       <footer className="md:bg-surface-low mt-auto flex items-center justify-end px-6 pt-3 pb-6 md:col-start-1 md:row-start-3 md:mt-0 md:justify-between md:px-8 md:py-4">
         <Button
           type="button"
+          disabled={isSubmitting}
           variant="secondary"
           onClick={onClose}
           className="bg-surface-highest text-foreground hidden h-9 cursor-pointer px-4 md:inline-flex"
@@ -335,10 +411,10 @@ export function CreateTaskForm({ onClose, initialEpicId = null, projectId }: Cre
 
         <Button
           type="submit"
-          disabled
+          disabled={isSubmitting}
           className="h-10 w-full cursor-pointer px-6 disabled:cursor-not-allowed disabled:opacity-60 md:w-auto"
         >
-          Add Task
+          {isSubmitting ? 'Creating...' : 'Add Task'}
         </Button>
       </footer>
     </form>
