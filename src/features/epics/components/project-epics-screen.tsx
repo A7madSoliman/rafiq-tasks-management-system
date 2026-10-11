@@ -40,7 +40,7 @@ export function ProjectEpicsScreen({ projectId }: ProjectEpicsScreenProps) {
     status: epicDetailsStatus,
     errorMessage: epicDetailsErrorMessage,
   } = useEpicDetails(projectId, selectedEpicId);
-  const { project } = useCurrentProject();
+  const { project, status: projectStatus } = useCurrentProject();
   const newEpicHref = `/project/${encodeURIComponent(projectId)}/epics/new`;
   const hasEpics = status === 'success' && epics.length > 0;
   const hasActiveSearch = searchTerm.length > 0;
@@ -129,7 +129,7 @@ export function ProjectEpicsScreen({ projectId }: ProjectEpicsScreenProps) {
     };
   }, [hasMore, isLoadingMore, loadMore, loadMoreError]);
 
-  if (!hasActiveSearch && status === 'loading') {
+  if (projectStatus === 'loading' || (!hasActiveSearch && status === 'loading')) {
     return <ProjectEpicsLoadingState />;
   }
 

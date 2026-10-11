@@ -14,10 +14,10 @@ type ProjectMembersScreenProps = {
 };
 
 export function ProjectMembersScreen({ projectId }: ProjectMembersScreenProps) {
-  const { project } = useCurrentProject();
+  const { project, status: projectStatus } = useCurrentProject();
   const { members, status, retry } = useProjectMembers(projectId);
 
-  if (status === 'loading') {
+  if (status === 'loading' || projectStatus === 'loading') {
     return (
       <div className="w-full px-4 py-8 lg:px-8">
         <ProjectMembersLoadingState />
