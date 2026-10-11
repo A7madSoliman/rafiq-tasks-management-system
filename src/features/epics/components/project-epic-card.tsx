@@ -22,16 +22,16 @@ export function ProjectEpicCard({ epic, onSelect }: ProjectEpicCardProps) {
   const assigneeInitials = epic.assignee ? getInitials(epic.assignee.name) : '—';
 
   return (
-    <article className="bg-surface border-primary focus-within:ring-primary relative flex min-h-[205px] cursor-pointer flex-col rounded-md border-l-4 px-4 py-4 pl-5 shadow-sm focus-within:ring-2 lg:min-h-[209px]">
-      <div className="pb-4">
+    <article className="bg-surface border-primary focus-within:ring-primary relative flex min-h-[205px] cursor-pointer flex-col rounded-md border-l-4 px-4 py-4 pl-5 shadow-sm focus-within:ring-2 lg:min-h-[176px] lg:py-3">
+      <div className="pb-4 lg:pb-2">
         <span className="bg-surface-highest text-primary inline-flex rounded-[2px] px-[10px] py-1 text-[10px] leading-[15px] font-bold tracking-[0.5px]">
           {epic.epicId}
         </span>
       </div>
-      <h2 className="text-foreground pb-3 text-xl leading-7 font-semibold">{epic.title}</h2>
-      <div className="mt-auto flex flex-col gap-6">
+      <h2 className="text-foreground pb-3 text-xl leading-7 font-semibold lg:pb-2 lg:text-lg lg:leading-6">{epic.title}</h2>
+      <div className="mt-auto flex flex-col gap-6 lg:gap-3">
         <div className="flex items-center gap-3">
-          <div className="bg-primary text-on-primary flex size-10 shrink-0 items-center justify-center rounded-[12px] text-sm leading-5 font-bold">
+          <div className="bg-primary text-on-primary flex size-10 lg:size-9 shrink-0 items-center justify-center rounded-[12px] text-sm leading-5 font-bold">
             {assigneeInitials}
           </div>
 
@@ -44,7 +44,7 @@ export function ProjectEpicCard({ epic, onSelect }: ProjectEpicCardProps) {
           </div>
         </div>
 
-        <div className="border-surface-low flex items-center justify-between gap-4 border-t pt-4 text-[11px] leading-[16.5px]">
+        <div className="border-surface-low flex items-center justify-between gap-4 border-t pt-4 lg:pt-2 text-[11px] leading-[16.5px]">
           <div className="flex min-w-0 items-center gap-2">
             <CreatedByIcon aria-hidden="true" className="shrink-0" />
             <p className="text-foreground-secondary min-w-0 truncate">

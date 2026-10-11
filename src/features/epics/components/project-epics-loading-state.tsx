@@ -18,20 +18,20 @@ function Skeleton({ className }: SkeletonProps) {
 
 function EpicCardSkeleton() {
   return (
-    <div className="bg-surface flex min-h-[205px] flex-col gap-4 rounded-md p-4 shadow-sm lg:min-h-[218px]">
+    <div className="bg-surface flex min-h-[205px] flex-col gap-4 rounded-md p-4 shadow-sm lg:min-h-[176px] lg:gap-2 lg:p-3">
       <div className="flex items-start justify-between">
         <Skeleton className="h-5 w-20 rounded-sm opacity-40" />
-        <Skeleton className="size-8 rounded-[12px]" />
+        <Skeleton className="size-8 rounded-[12px] lg:size-6" />
       </div>
 
       <Skeleton className="h-6 w-full rounded-xs" />
 
-      <div className="flex items-center gap-3 pt-4">
+      <div className="flex items-center gap-3 pt-4 lg:pt-1">
         <Skeleton className="size-8 shrink-0 rounded-[12px]" />
         <Skeleton className="h-4 w-32 rounded-xs" />
       </div>
 
-      <div className="mt-auto flex flex-col gap-2 pt-2">
+      <div className="mt-auto flex flex-col gap-2 pt-2 lg:gap-1 lg:pt-1">
         <Skeleton className="h-[6px] w-full rounded-xs" />
 
         <div className="flex items-center justify-between">
@@ -48,7 +48,7 @@ export function ProjectEpicsListLoadingState() {
     <div role="status">
       <span className="sr-only">Searching epics...</span>
 
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-6">
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-4">
         {Array.from({ length: 6 }, (_, index) => (
           <EpicCardSkeleton key={index} />
         ))}
@@ -59,7 +59,7 @@ export function ProjectEpicsListLoadingState() {
 
 export function ProjectEpicsLoadingState() {
   return (
-    <div className="w-full px-4 py-8 lg:px-8">
+    <div className="w-full px-4 py-8 lg:px-8 lg:pb-4">
       <div className="hidden lg:block">
         <div className="flex items-center gap-2">
           <Skeleton className="h-4 w-16 rounded-xs opacity-60" />
@@ -80,7 +80,7 @@ export function ProjectEpicsLoadingState() {
           </div>
         </div>
 
-        <div className="mx-auto mt-12 grid w-full max-w-[1280px] grid-cols-2 gap-6">
+        <div className="mx-auto mt-8 grid w-full max-w-[1280px] grid-cols-2 gap-4">
           {Array.from({ length: 6 }, (_, index) => (
             <EpicCardSkeleton key={index} />
           ))}

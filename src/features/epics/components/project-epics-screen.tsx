@@ -142,8 +142,8 @@ export function ProjectEpicsScreen({ projectId }: ProjectEpicsScreenProps) {
   }
 
   return (
-    <div className="w-full px-4 py-8 lg:px-8">
-      <div className="flex w-full flex-col gap-6 lg:gap-10">
+    <div className="w-full px-4 py-8 lg:px-8 lg:pb-4">
+      <div className="flex w-full flex-col gap-6 lg:gap-8">
         <div className="hidden items-end justify-between lg:flex">
           <div>
             <nav
@@ -188,7 +188,7 @@ export function ProjectEpicsScreen({ projectId }: ProjectEpicsScreenProps) {
 
             <Link
               href={newEpicHref}
-              className="text-on-primary flex h-10 items-center gap-2 rounded-sm bg-[linear-gradient(136deg,var(--color-primary)_0%,var(--color-primary-container)_100%)] px-6 text-sm leading-5 font-bold shadow-lg"
+              className="text-on-primary flex h-10 shrink-0 items-center justify-center gap-2 rounded-sm bg-[linear-gradient(136deg,var(--color-primary)_0%,var(--color-primary-container)_100%)] px-6 text-sm leading-5 font-bold whitespace-nowrap shadow-lg"
             >
               <AddIcon aria-hidden="true" />
               <span>New Epic</span>
@@ -234,7 +234,7 @@ export function ProjectEpicsScreen({ projectId }: ProjectEpicsScreenProps) {
           </div>
         ) : hasEpics ? (
           <>
-            <div className="mx-auto grid w-full max-w-[1280px] grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-6">
+            <div className="mx-auto grid w-full max-w-[1280px] grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-4">
               {epics.map((epic) => (
                 <ProjectEpicCard key={epic.id} epic={epic} onSelect={handleSelectEpic} />
               ))}
