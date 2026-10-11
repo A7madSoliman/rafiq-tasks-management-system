@@ -25,7 +25,7 @@ export function TaskBoardDesktopHeader() {
 
         <BreadcrumbChevronIcon aria-hidden="true" />
 
-        <span className="text-foreground">Tasks</span>
+        <span className="text-primary">Tasks</span>
       </nav>
 
       <div className="flex items-end justify-between gap-6">
