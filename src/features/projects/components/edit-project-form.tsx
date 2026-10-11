@@ -80,11 +80,11 @@ export function EditProjectForm({ project }: EditProjectFormProps) {
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1280px] px-6 pt-8 pb-12 lg:px-8">
+    <div className="w-full px-6 pt-8 pb-12 lg:px-8">
       <header className="hidden lg:block">
         <nav
           aria-label="Breadcrumb"
-          className="flex items-center gap-2 text-xs leading-4 font-bold tracking-[1.2px] uppercase"
+          className="text-task-status-label flex items-center gap-2 text-[10px] leading-[15px] font-bold tracking-[1px] uppercase"
         >
           <Link href="/project" className="text-foreground-secondary/60">
             Projects
@@ -103,7 +103,7 @@ export function EditProjectForm({ project }: EditProjectFormProps) {
           <span className="text-primary">Edit</span>
         </nav>
 
-        <h1 className="text-foreground mt-4 text-[36px] leading-10 font-semibold tracking-[-0.9px]">
+        <h1 className="text-foreground mt-6 text-[30px] leading-9 font-semibold tracking-[-0.75px]">
           Edit Project
         </h1>
       </header>

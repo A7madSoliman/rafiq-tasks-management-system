@@ -1,6 +1,6 @@
 export function EditProjectLoadingState() {
   return (
-    <div className="mx-auto w-full max-w-[1280px] animate-pulse px-6 pt-8 pb-12 lg:px-8">
+    <div className="w-full animate-pulse px-6 pt-8 pb-12 lg:px-8">
       <header className="hidden lg:block">
         <div className="bg-surface-icon h-4 w-64 rounded-xs" />
 

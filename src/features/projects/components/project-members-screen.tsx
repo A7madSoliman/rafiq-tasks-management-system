@@ -19,7 +19,7 @@ export function ProjectMembersScreen({ projectId }: ProjectMembersScreenProps) {
 
   if (status === 'loading') {
     return (
-      <div className="mx-auto w-full max-w-[1280px] px-4 py-8 lg:px-8">
+      <div className="w-full px-4 py-8 lg:px-8">
         <ProjectMembersLoadingState />
       </div>
     );
@@ -29,13 +29,13 @@ export function ProjectMembersScreen({ projectId }: ProjectMembersScreenProps) {
     return <ProjectMembersErrorState onRetry={retry} />;
   }
   return (
-    <div className="mx-auto w-full max-w-[1280px] px-4 py-8 lg:px-8">
+    <div className="w-full px-4 py-8 lg:px-8">
       <header>
         <div className="hidden items-end justify-between lg:flex">
           <div>
             <nav
               aria-label="Breadcrumb"
-              className="flex items-center gap-2 text-xs leading-4 font-bold tracking-[1.2px] uppercase"
+              className="text-task-status-label flex items-center gap-2 text-[10px] leading-[15px] font-bold tracking-[1px] uppercase"
             >
               <Link href="/project" className="text-foreground-secondary/60">
                 Projects
@@ -54,12 +54,12 @@ export function ProjectMembersScreen({ projectId }: ProjectMembersScreenProps) {
               <span className="text-primary">Members</span>
             </nav>
 
-            <h1 className="text-foreground mt-4 text-[36px] leading-10 font-semibold tracking-[-0.9px]">
+            <h1 className="text-foreground mt-6 text-[30px] leading-9 font-semibold tracking-[-0.75px]">
               Project Members
             </h1>
           </div>
 
-          <Button type="button" className="px-6 py-3 text-sm leading-5 font-bold">
+          <Button type="button" className="h-10 px-6 py-2 text-sm leading-5 font-bold">
             Invite Member
           </Button>
         </div>

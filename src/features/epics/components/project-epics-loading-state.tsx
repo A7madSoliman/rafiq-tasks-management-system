@@ -59,7 +59,7 @@ export function ProjectEpicsListLoadingState() {
 
 export function ProjectEpicsLoadingState() {
   return (
-    <div className="mx-auto w-full max-w-[1280px] px-4 py-8 lg:px-8">
+    <div className="w-full px-4 py-8 lg:px-8">
       <div className="hidden lg:block">
         <div className="flex items-center gap-2">
           <Skeleton className="h-4 w-16 rounded-xs opacity-60" />
@@ -80,7 +80,7 @@ export function ProjectEpicsLoadingState() {
           </div>
         </div>
 
-        <div className="mt-12 grid grid-cols-2 gap-6">
+        <div className="mx-auto mt-12 grid w-full max-w-[1280px] grid-cols-2 gap-6">
           {Array.from({ length: 6 }, (_, index) => (
             <EpicCardSkeleton key={index} />
           ))}

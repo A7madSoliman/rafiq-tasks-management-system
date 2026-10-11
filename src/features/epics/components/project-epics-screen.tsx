@@ -142,13 +142,13 @@ export function ProjectEpicsScreen({ projectId }: ProjectEpicsScreenProps) {
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1280px] px-4 py-8 lg:px-8">
+    <div className="w-full px-4 py-8 lg:px-8">
       <div className="flex w-full flex-col gap-6 lg:gap-10">
         <div className="hidden items-end justify-between lg:flex">
           <div>
             <nav
               aria-label="Breadcrumb"
-              className="flex items-center gap-2 text-xs leading-4 font-bold tracking-[1.2px] uppercase"
+              className="text-task-status-label flex items-center gap-2 text-[10px] leading-[15px] font-bold tracking-[1px] uppercase"
             >
               <Link href="/project" className="text-foreground-secondary/60">
                 Projects
@@ -167,13 +167,13 @@ export function ProjectEpicsScreen({ projectId }: ProjectEpicsScreenProps) {
               <span className="text-primary">Epics</span>
             </nav>
 
-            <h1 className="text-foreground mt-4 text-[36px] leading-10 font-semibold tracking-[-0.9px]">
+            <h1 className="text-foreground mt-6 text-[30px] leading-9 font-semibold tracking-[-0.75px]">
               Project Epics
             </h1>
           </div>
 
           <div className="flex items-center gap-8">
-            <label className="bg-surface-highest flex h-12 w-[303px] items-center gap-3 rounded-xs px-3">
+            <label className="bg-surface-highest flex h-10 w-64 items-center gap-3 rounded-sm px-3">
               <SearchIcon aria-hidden="true" />
 
               <input
@@ -188,7 +188,7 @@ export function ProjectEpicsScreen({ projectId }: ProjectEpicsScreenProps) {
 
             <Link
               href={newEpicHref}
-              className="text-on-primary flex h-12 items-center gap-2 rounded-sm bg-[linear-gradient(136deg,var(--color-primary)_0%,var(--color-primary-container)_100%)] px-6 text-base leading-6 font-bold shadow-lg"
+              className="text-on-primary flex h-10 items-center gap-2 rounded-sm bg-[linear-gradient(136deg,var(--color-primary)_0%,var(--color-primary-container)_100%)] px-6 text-sm leading-5 font-bold shadow-lg"
             >
               <AddIcon aria-hidden="true" />
               <span>New Epic</span>
@@ -234,7 +234,7 @@ export function ProjectEpicsScreen({ projectId }: ProjectEpicsScreenProps) {
           </div>
         ) : hasEpics ? (
           <>
-            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-6">
+            <div className="mx-auto grid w-full max-w-[1280px] grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-6">
               {epics.map((epic) => (
                 <ProjectEpicCard key={epic.id} epic={epic} onSelect={handleSelectEpic} />
               ))}
