@@ -4,10 +4,9 @@ import NoTasksIcon from '@/assets/icons/tasks/no-tasks.svg';
 
 import { Button } from '@/components/ui/button';
 
-import { TASK_STATUSES } from '../constants/task-statuses';
 import type { CreatedTask } from '../schemas/created-task-schema';
 
-import { TaskBoardColumn } from './task-board-column';
+import { TaskBoardCard } from './task-board-card';
 
 type TaskBoardMobileScreenProps = {
   tasks: readonly CreatedTask[];
@@ -20,13 +19,7 @@ export function TaskBoardMobileScreen({
   assigneeNamesById,
   onAddTask,
 }: TaskBoardMobileScreenProps) {
-  // Preserve the status order defined by the project.
-  const populatedColumns = TASK_STATUSES.map((status) => ({
-    status,
-    tasks: tasks.filter((task) => task.status === status.value),
-  })).filter((column) => column.tasks.length > 0);
-
-  const isEmpty = populatedColumns.length === 0;
+  const isEmpty = tasks.length === 0;
 
   return (
     <section
@@ -69,15 +62,15 @@ export function TaskBoardMobileScreen({
           </p>
         </div>
       ) : (
-        <div aria-label="Task status groups" className="mt-7 flex min-w-0 flex-col gap-8">
-          {populatedColumns.map(({ status, tasks: columnTasks }) => (
-            <TaskBoardColumn
-              key={status.value}
-              status={status}
-              tasks={columnTasks}
-              assigneeNamesById={assigneeNamesById}
-              onAddTask={onAddTask}
-              showAddButton={false}
+        <div aria-label="Tasks" className="mt-7 flex min-w-0 flex-col gap-3">
+          {tasks.map((task) => (
+            <TaskBoardCard
+              key={task.id}
+              task={task}
+              mobile
+              assigneeName={
+                task.assignee_id ? (assigneeNamesById.get(task.assignee_id) ?? null) : null
+              }
             />
           ))}
         </div>

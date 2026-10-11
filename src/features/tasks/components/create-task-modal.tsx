@@ -106,14 +106,14 @@ export function CreateTaskModal({
         aria-modal="true"
         aria-label="Add New Task"
         tabIndex={-1}
-        className="bg-surface-low md:bg-surface relative z-10 flex h-[857px] max-h-[calc(100dvh-16px)] w-full flex-col overflow-hidden rounded-t-[32px] shadow-[0_-4px_12px_rgba(4,27,60,0.06)] md:h-[870px] md:max-h-[calc(100dvh-48px)] md:max-w-[896px] md:rounded-md md:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)]"
+        className="bg-surface-low md:bg-surface relative z-10 flex h-[91dvh] max-h-[calc(100dvh-12px)] w-full flex-col overflow-hidden rounded-t-[24px] shadow-[0_-4px_12px_rgba(4,27,60,0.06)] md:h-[870px] md:max-h-[calc(100dvh-48px)] md:max-w-[896px] md:rounded-md md:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)]"
       >
         {/* Mobile header */}
-        <div className="flex shrink-0 flex-col gap-[10px] px-6 pt-8 md:hidden">
-          <div aria-hidden="true" className="bg-outline/30 mx-auto h-[6px] w-12 rounded-full" />
+        <div className="flex shrink-0 flex-col gap-3 px-4 pt-4 pb-2 md:hidden">
+          <div aria-hidden="true" className="bg-outline/30 mx-auto h-1 w-10 rounded-full" />
 
           <div className="flex items-center justify-between">
-            <h2 className="text-foreground text-2xl leading-8 font-bold tracking-[-0.6px]">
+            <h2 className="text-foreground text-base leading-6 font-bold tracking-[-0.5px]">
               Add New Task
             </h2>
 

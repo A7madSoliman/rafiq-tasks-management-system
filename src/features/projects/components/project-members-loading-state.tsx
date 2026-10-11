@@ -9,7 +9,7 @@ function Skeleton({ className }: SkeletonProps) {
     <div
       aria-hidden="true"
       className={cn(
-        'from-surface-icon via-surface-low to-surface-icon animate-pulse bg-gradient-to-r',
+        'from-surface-icon via-surface-low to-surface-icon animate-pulse bg-gradient-to-r motion-reduce:animate-none',
         className,
       )}
     />
@@ -18,12 +18,17 @@ function Skeleton({ className }: SkeletonProps) {
 
 function DesktopSkeletonRow() {
   return (
-    <div className="grid grid-cols-[64px_1fr_160px] items-center px-4 py-6">
-      <Skeleton className="size-10 rounded-[12px]" />
-
-      <Skeleton className="h-5 w-48 rounded-xs" />
-
-      <Skeleton className="h-4 w-40 rounded-xs" />
+    <div className="grid grid-cols-[389px_188px] items-center border-t border-surface-icon">
+      <div className="flex items-center gap-4 px-8 py-[18px]">
+        <Skeleton className="size-12 shrink-0 rounded-[12px]" />
+        <div className="flex flex-col gap-2">
+          <Skeleton className="h-4 w-40 rounded-xs" />
+          <Skeleton className="h-3 w-48 rounded-xs" />
+        </div>
+      </div>
+      <div className="px-8 py-[34px]">
+        <Skeleton className="h-5 w-16 rounded-full" />
+      </div>
     </div>
   );
 }
@@ -33,13 +38,11 @@ function MobileSkeletonCard() {
     <div className="bg-surface flex items-center justify-between gap-3 rounded-md p-4">
       <div className="flex min-w-0 items-center gap-4">
         <Skeleton className="size-12 shrink-0 rounded-[12px]" />
-
         <div className="flex min-w-0 flex-col gap-2">
           <Skeleton className="h-4 w-28 rounded-xs" />
           <Skeleton className="h-3 w-36 max-w-full rounded-xs" />
         </div>
       </div>
-
       <Skeleton className="h-[19px] w-14 shrink-0 rounded-full" />
     </div>
   );
@@ -47,38 +50,30 @@ function MobileSkeletonCard() {
 
 export function ProjectMembersLoadingState() {
   return (
-    <>
+    <div role="status" aria-label="Loading project members">
+      <span className="sr-only">Loading project members...</span>
       <div className="hidden lg:block">
-        <div className="flex items-end justify-between">
-          <div className="flex flex-col gap-4">
+        <div className="flex items-end justify-between gap-6">
+          <div>
             <div className="flex items-center gap-2">
               <Skeleton className="h-3 w-16 rounded-xs" />
-
-              <span aria-hidden="true" className="text-outline text-xs leading-4">
-                /
-              </span>
-
+              <Skeleton className="h-3 w-2 rounded-xs" />
               <Skeleton className="h-3 w-24 rounded-xs" />
+              <Skeleton className="h-3 w-2 rounded-xs" />
+              <Skeleton className="h-3 w-16 rounded-xs" />
             </div>
-
-            <div className="flex flex-col gap-2">
-              <Skeleton className="h-10 w-64 rounded-sm" />
-              <Skeleton className="h-4 w-96 rounded-xs" />
-            </div>
+            <Skeleton className="mt-6 h-9 w-64 rounded-sm" />
           </div>
-
-          <Skeleton className="h-12 w-40 rounded-sm" />
+          <Skeleton className="h-10 w-36 shrink-0 rounded-sm" />
         </div>
 
-        <div className="mt-12 flex justify-center">
-          <div className="bg-surface w-[599px] rounded-md px-6 pt-6 pb-4 shadow-sm">
-            <div className="border-surface-icon/50 grid grid-cols-[64px_1fr_160px] border-b px-4 pb-[25px]">
-              <Skeleton className="h-3 w-8 rounded-xs" />
-              <Skeleton className="h-3 w-24 rounded-xs" />
-              <Skeleton className="h-3 w-24 rounded-xs" />
-            </div>
-
-            <div className="pb-8">
+        <div className="mt-8 flex justify-center">
+          <div className="bg-surface-low rounded-md p-1">
+            <div className="bg-surface w-[577px] overflow-hidden rounded-md shadow-sm">
+              <div className="bg-surface-nested/30 grid grid-cols-[389px_188px]">
+                <div className="px-8 py-5"><Skeleton className="h-3 w-20 rounded-xs" /></div>
+                <div className="px-8 py-5"><Skeleton className="h-3 w-16 rounded-xs" /></div>
+              </div>
               {Array.from({ length: 5 }, (_, index) => (
                 <DesktopSkeletonRow key={index} />
               ))}
@@ -89,13 +84,12 @@ export function ProjectMembersLoadingState() {
 
       <div className="lg:hidden">
         <Skeleton className="mx-auto h-10 w-64 max-w-full rounded-sm" />
-
-        <div className="mt-3 flex flex-col gap-3">
+        <div className="mt-8 flex flex-col gap-3">
           {Array.from({ length: 5 }, (_, index) => (
             <MobileSkeletonCard key={index} />
           ))}
         </div>
       </div>
-    </>
+    </div>
   );
 }

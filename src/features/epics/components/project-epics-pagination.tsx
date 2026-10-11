@@ -22,7 +22,7 @@ export function ProjectEpicsPagination({
   const paginationItems = getEpicsPaginationItems(currentPage, totalPages);
 
   return (
-    <nav aria-label="Epics pagination" className="hidden justify-end pt-12 pb-8 lg:flex">
+    <nav aria-label="Epics pagination" className="hidden justify-end pt-4 pb-2 lg:pr-40 lg:flex">
       <div className="flex items-center gap-2">
         <button
           type="button"

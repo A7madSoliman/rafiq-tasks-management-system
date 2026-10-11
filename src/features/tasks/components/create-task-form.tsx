@@ -28,7 +28,7 @@ type CreateTaskFormProps = {
 };
 
 const selectClassName =
-  'bg-surface border border-surface-highest text-foreground h-10 w-full appearance-none rounded-md px-2 pr-10 text-xs outline-none focus-visible:ring-2 focus-visible:ring-primary';
+  'bg-surface border border-surface-highest h-11 w-full appearance-none rounded-md px-3 md:px-2 pr-10 md:h-10 md:text-xs outline-none focus-visible:ring-2 focus-visible:ring-primary text-xs font-normal';
 
 function SelectChevron() {
   return (
@@ -87,6 +87,8 @@ export function CreateTaskForm({
     },
   });
 
+  const selectedAssigneeId = useWatch({ control, name: 'assigneeId' });
+  const selectedEpicId = useWatch({ control, name: 'epicId' });
   const selectedDueDate = useWatch({
     control,
     name: 'dueDate',
@@ -172,243 +174,245 @@ export function CreateTaskForm({
     <form
       noValidate
       onSubmit={handleSubmit(onSubmit)}
-      className="flex h-full min-h-0 flex-col overflow-y-auto md:grid md:grid-cols-[minmax(0,1fr)_320px] md:grid-rows-[auto_minmax(0,1fr)_auto] md:overflow-hidden"
+      className="flex h-full min-h-0 flex-col overflow-hidden md:grid md:grid-cols-[minmax(0,1fr)_320px] md:grid-rows-[auto_minmax(0,1fr)_auto]"
     >
-      {/* Title */}
-      <div className="md:border-surface-icon flex flex-col gap-6 px-6 pt-5 pb-4 md:col-start-1 md:row-start-1 md:border-b md:px-8 md:pt-6 md:pb-6">
-        <h2 className="text-foreground hidden text-xl leading-[30px] font-semibold md:block">
-          Add New Task
-        </h2>
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain md:contents">
+        {/* Title */}
+        <div className="md:border-surface-icon flex flex-col gap-3 px-4 pt-3 pb-3 md:col-start-1 md:row-start-1 md:gap-6 md:border-b md:px-8 md:pt-6 md:pb-6">
+          <h2 className="text-foreground hidden text-xl leading-[30px] font-semibold md:block">
+            Add New Task
+          </h2>
 
-        <div className="flex flex-col gap-3">
-          <FieldLabel htmlFor="task-title">Title</FieldLabel>
+          <div className="flex flex-col gap-2 md:gap-3">
+            <FieldLabel htmlFor="task-title">Title</FieldLabel>
 
-          <Input
-            id="task-title"
-            placeholder="e.g., Finalize structural schematics"
-            aria-required="true"
-            aria-invalid={Boolean(errors.title)}
-            className="bg-surface border-surface-highest h-[54px] rounded-[12px] border px-3 text-xs"
-            {...register('title')}
-          />
-
-          {errors.title && (
-            <p role="alert" className="text-error text-xs">
-              {errors.title.message}
-            </p>
-          )}
-
-          {submitError && (
-            <p role="alert" className="text-error text-xs">
-              {submitError}
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* Description */}
-      <div className="flex min-h-0 flex-col px-6 pb-6 md:col-start-1 md:row-start-2 md:px-8 md:py-8">
-        <div className="flex min-h-0 flex-1 flex-col gap-3">
-          <FieldLabel htmlFor="task-description">Description</FieldLabel>
-
-          <Textarea
-            id="task-description"
-            placeholder="Provide detailed context for this task..."
-            aria-invalid={Boolean(errors.description)}
-            className="bg-surface border-surface-highest h-[188px] shrink-0 rounded-[12px] border p-3 text-xs leading-5 md:h-full md:min-h-0 md:flex-1"
-            {...register('description')}
-          />
-
-          {errors.description && (
-            <p role="alert" className="text-error text-xs">
-              {errors.description.message}
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* Side attributes */}
-      <aside className="bg-surface-low md:border-surface-icon flex flex-col gap-4 px-6 py-6 md:col-start-2 md:row-span-3 md:row-start-1 md:border-l md:px-8 md:py-8">
-        {/* Status */}
-        <div className="flex flex-col gap-3">
-          <FieldLabel htmlFor="task-status">Status</FieldLabel>
-
-          <div className="relative">
-            <select
-              id="task-status"
-              className={selectClassName}
-              aria-invalid={Boolean(errors.status)}
-              {...register('status')}
-            >
-              {TASK_STATUSES.map((status) => (
-                <option key={status.value} value={status.value}>
-                  {status.label}
-                </option>
-              ))}
-            </select>
-
-            <SelectChevron />
-          </div>
-
-          {errors.status && (
-            <p role="alert" className="text-error text-xs">
-              {errors.status.message}
-            </p>
-          )}
-        </div>
-
-        {/* Assignee */}
-        <div className="flex flex-col gap-3">
-          <FieldLabel htmlFor="task-assignee">Assignee</FieldLabel>
-
-          <div className="relative">
-            <select
-              id="task-assignee"
-              className={selectClassName}
-              aria-invalid={Boolean(errors.assigneeId)}
-              aria-busy={membersStatus === 'loading'}
-              {...register('assigneeId')}
-            >
-              <option value="">
-                {membersStatus === 'loading'
-                  ? 'Loading members...'
-                  : membersStatus === 'error'
-                    ? 'Unable to load members'
-                    : members.length === 0
-                      ? 'No members available'
-                      : 'Select Team Member'}
-              </option>
-
-              {membersStatus === 'success' &&
-                members.map((member) => (
-                  <option key={member.id} value={member.userId}>
-                    {member.name} — {member.email}
-                  </option>
-                ))}
-            </select>
-
-            <SelectChevron />
-          </div>
-
-          {membersStatus === 'error' && (
-            <button
-              type="button"
-              onClick={retryMembers}
-              className="text-primary w-fit cursor-pointer text-xs font-medium"
-            >
-              Retry loading members
-            </button>
-          )}
-
-          {errors.assigneeId && (
-            <p role="alert" className="text-error text-xs">
-              {errors.assigneeId.message}
-            </p>
-          )}
-        </div>
-
-        {/* Epic */}
-        <div className="flex flex-col gap-3">
-          <FieldLabel htmlFor="task-epic">Epic</FieldLabel>
-
-          <div className="relative">
-            <select
-              id="task-epic"
-              className={selectClassName}
-              disabled={epicsStatus !== 'success'}
-              aria-busy={epicsStatus === 'loading'}
-              aria-invalid={Boolean(errors.epicId)}
-              {...register('epicId')}
-            >
-              <option value="">
-                {epicsStatus === 'loading'
-                  ? 'Loading epics...'
-                  : epicsStatus === 'error'
-                    ? 'Unable to load epics'
-                    : epics.length === 0
-                      ? 'No epics available'
-                      : 'Select Epic'}
-              </option>
-
-              {epicsStatus === 'success' &&
-                epics.map((epic) => (
-                  <option key={epic.id} value={epic.id}>
-                    {epic.epicId} {formatEpicTitle(epic.title)}
-                  </option>
-                ))}
-            </select>
-
-            <SelectChevron />
-          </div>
-
-          {epicsStatus === 'error' && (
-            <button
-              type="button"
-              onClick={retryEpics}
-              className="text-primary w-fit cursor-pointer text-xs font-medium"
-            >
-              Retry loading epics
-            </button>
-          )}
-
-          {errors.epicId && (
-            <p role="alert" className="text-error text-xs">
-              {errors.epicId.message}
-            </p>
-          )}
-        </div>
-
-        {/* Due Date */}
-        <div className="flex flex-col gap-3">
-          <FieldLabel htmlFor="task-due-date-trigger">Due Date</FieldLabel>
-
-          <div className="relative">
-            <button
-              id="task-due-date-trigger"
-              type="button"
-              onClick={openDatePicker}
-              className="bg-surface border-surface-highest focus-visible:outline-primary flex h-10 w-full cursor-pointer items-center gap-2 rounded-md border px-2 text-left focus-visible:outline-2"
-            >
-              <DateIcon aria-hidden="true" className="shrink-0" />
-
-              <span
-                className={
-                  selectedDueDate
-                    ? 'text-foreground flex-1 text-xs font-medium'
-                    : 'text-foreground-subtle flex-1 text-xs font-medium'
-                }
-              >
-                {selectedDueDate ? formatDueDate(selectedDueDate) : 'mm/dd/yyyy'}
-              </span>
-
-              <ChevronDownIcon aria-hidden="true" className="shrink-0" />
-            </button>
-
-            <input
-              id="task-due-date"
-              type="date"
-              aria-label="Due Date"
-              tabIndex={-1}
-              aria-invalid={Boolean(errors.dueDate)}
-              className="pointer-events-none absolute inset-0 h-full w-full opacity-0"
-              {...dueDateRegistration}
-              ref={(element) => {
-                dueDateRegistration.ref(element);
-                dueDateInputRef.current = element;
-              }}
+            <Input
+              id="task-title"
+              placeholder="e.g., Finalize structural schematics"
+              aria-required="true"
+              aria-invalid={Boolean(errors.title)}
+              className="bg-surface border-surface-highest h-11 rounded-[12px] border px-3 text-xs font-normal md:h-[54px] md:text-xs"
+              {...register('title')}
             />
+
+            {errors.title && (
+              <p role="alert" className="text-error text-xs">
+                {errors.title.message}
+              </p>
+            )}
+
+            {submitError && (
+              <p role="alert" className="text-error text-xs">
+                {submitError}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Description */}
+        <div className="flex min-h-0 flex-col px-4 pb-3 md:col-start-1 md:row-start-2 md:px-8 md:py-8">
+          <div className="flex min-h-0 flex-1 flex-col gap-2 md:gap-3">
+            <FieldLabel htmlFor="task-description">Description</FieldLabel>
+
+            <Textarea
+              id="task-description"
+              placeholder="Provide detailed context for this task..."
+              aria-invalid={Boolean(errors.description)}
+              className="bg-surface border-surface-highest h-[clamp(120px,22dvh,200px)] shrink-0 rounded-[12px] border p-3 text-xs leading-5 font-normal md:h-full md:min-h-0 md:flex-1 md:text-xs"
+              {...register('description')}
+            />
+
+            {errors.description && (
+              <p role="alert" className="text-error text-xs">
+                {errors.description.message}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Side attributes */}
+        <aside className="bg-surface-low md:border-surface-icon flex flex-col gap-3 px-4 py-3 md:col-start-2 md:row-span-3 md:row-start-1 md:gap-4 md:border-l md:px-8 md:py-8">
+          {/* Status */}
+          <div className="flex flex-col gap-2 md:gap-3">
+            <FieldLabel htmlFor="task-status">Status</FieldLabel>
+
+            <div className="relative">
+              <select
+                id="task-status"
+                className={`${selectClassName} text-foreground`}
+                aria-invalid={Boolean(errors.status)}
+                {...register('status')}
+              >
+                {TASK_STATUSES.map((status) => (
+                  <option key={status.value} value={status.value}>
+                    {status.label}
+                  </option>
+                ))}
+              </select>
+
+              <SelectChevron />
+            </div>
+
+            {errors.status && (
+              <p role="alert" className="text-error text-xs">
+                {errors.status.message}
+              </p>
+            )}
           </div>
 
-          {errors.dueDate && (
-            <p id="task-due-date-error" role="alert" className="text-error text-xs">
-              {errors.dueDate.message}
-            </p>
-          )}
-        </div>
-      </aside>
+          {/* Assignee */}
+          <div className="flex flex-col gap-2 md:gap-3">
+            <FieldLabel htmlFor="task-assignee">Assignee</FieldLabel>
+
+            <div className="relative">
+              <select
+                id="task-assignee"
+                className={`${selectClassName} ${selectedAssigneeId ? 'text-foreground' : 'text-foreground-secondary'}`}
+                aria-invalid={Boolean(errors.assigneeId)}
+                aria-busy={membersStatus === 'loading'}
+                {...register('assigneeId')}
+              >
+                <option value="">
+                  {membersStatus === 'loading'
+                    ? 'Loading members...'
+                    : membersStatus === 'error'
+                      ? 'Unable to load members'
+                      : members.length === 0
+                        ? 'No members available'
+                        : 'Select Team Member'}
+                </option>
+
+                {membersStatus === 'success' &&
+                  members.map((member) => (
+                    <option key={member.id} value={member.userId}>
+                      {member.name} — {member.email}
+                    </option>
+                  ))}
+              </select>
+
+              <SelectChevron />
+            </div>
+
+            {membersStatus === 'error' && (
+              <button
+                type="button"
+                onClick={retryMembers}
+                className="text-primary w-fit cursor-pointer text-xs font-medium"
+              >
+                Retry loading members
+              </button>
+            )}
+
+            {errors.assigneeId && (
+              <p role="alert" className="text-error text-xs">
+                {errors.assigneeId.message}
+              </p>
+            )}
+          </div>
+
+          {/* Epic */}
+          <div className="flex flex-col gap-2 md:gap-3">
+            <FieldLabel htmlFor="task-epic">Epic</FieldLabel>
+
+            <div className="relative">
+              <select
+                id="task-epic"
+                className={`${selectClassName} ${selectedEpicId ? 'text-foreground' : 'text-foreground-secondary'}`}
+                disabled={epicsStatus !== 'success'}
+                aria-busy={epicsStatus === 'loading'}
+                aria-invalid={Boolean(errors.epicId)}
+                {...register('epicId')}
+              >
+                <option value="">
+                  {epicsStatus === 'loading'
+                    ? 'Loading epics...'
+                    : epicsStatus === 'error'
+                      ? 'Unable to load epics'
+                      : epics.length === 0
+                        ? 'No epics available'
+                        : 'Select Epic'}
+                </option>
+
+                {epicsStatus === 'success' &&
+                  epics.map((epic) => (
+                    <option key={epic.id} value={epic.id}>
+                      {epic.epicId} {formatEpicTitle(epic.title)}
+                    </option>
+                  ))}
+              </select>
+
+              <SelectChevron />
+            </div>
+
+            {epicsStatus === 'error' && (
+              <button
+                type="button"
+                onClick={retryEpics}
+                className="text-primary w-fit cursor-pointer text-xs font-medium"
+              >
+                Retry loading epics
+              </button>
+            )}
+
+            {errors.epicId && (
+              <p role="alert" className="text-error text-xs">
+                {errors.epicId.message}
+              </p>
+            )}
+          </div>
+
+          {/* Due Date */}
+          <div className="flex flex-col gap-2 md:gap-3">
+            <FieldLabel htmlFor="task-due-date-trigger">Due Date</FieldLabel>
+
+            <div className="relative">
+              <button
+                id="task-due-date-trigger"
+                type="button"
+                onClick={openDatePicker}
+                className="bg-surface border-surface-highest focus-visible:outline-primary flex h-11 w-full cursor-pointer items-center gap-2 rounded-md border px-2 text-left focus-visible:outline-2 md:h-10"
+              >
+                <DateIcon aria-hidden="true" className="shrink-0" />
+
+                <span
+                  className={
+                    selectedDueDate
+                      ? 'text-foreground flex-1 text-xs font-medium'
+                      : 'text-foreground-subtle flex-1 text-xs font-medium'
+                  }
+                >
+                  {selectedDueDate ? formatDueDate(selectedDueDate) : 'mm/dd/yyyy'}
+                </span>
+
+                <ChevronDownIcon aria-hidden="true" className="shrink-0" />
+              </button>
+
+              <input
+                id="task-due-date"
+                type="date"
+                aria-label="Due Date"
+                tabIndex={-1}
+                aria-invalid={Boolean(errors.dueDate)}
+                className="pointer-events-none absolute inset-0 h-full w-full opacity-0"
+                {...dueDateRegistration}
+                ref={(element) => {
+                  dueDateRegistration.ref(element);
+                  dueDateInputRef.current = element;
+                }}
+              />
+            </div>
+
+            {errors.dueDate && (
+              <p id="task-due-date-error" role="alert" className="text-error text-xs">
+                {errors.dueDate.message}
+              </p>
+            )}
+          </div>
+        </aside>
+      </div>
 
       {/* Actions */}
-      <footer className="md:bg-surface-low mt-auto flex items-center justify-end px-6 pt-3 pb-6 md:col-start-1 md:row-start-3 md:mt-0 md:justify-between md:px-8 md:py-4">
+      <footer className="md:bg-surface-low border-surface-highest mt-auto flex shrink-0 items-center justify-end border-t px-4 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] md:col-start-1 md:row-start-3 md:mt-0 md:justify-between md:border-0 md:px-8 md:py-4">
         <Button
           type="button"
           disabled={isSubmitting}
@@ -422,7 +426,7 @@ export function CreateTaskForm({
         <Button
           type="submit"
           disabled={isSubmitting}
-          className="h-10 w-full cursor-pointer px-6 disabled:cursor-not-allowed disabled:opacity-60 md:w-auto"
+          className="h-11 w-full cursor-pointer px-6 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-60 md:h-10 md:w-auto md:text-sm"
         >
           {isSubmitting ? 'Creating...' : 'Add Task'}
         </Button>

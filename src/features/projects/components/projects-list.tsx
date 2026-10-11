@@ -12,14 +12,14 @@ type ProjectsListProps = {
 export function ProjectsList({ projects }: ProjectsListProps) {
   return (
     <section className="w-full px-6 py-6 lg:px-8 lg:py-8">
-      <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-6 lg:gap-10">
+      <div className="flex w-full flex-col gap-6 lg:gap-10">
         <div className="flex items-end justify-between">
           <div className="flex min-w-0 flex-col gap-1">
             <h1 className="text-foreground text-2xl leading-8 font-bold tracking-[-0.6px] lg:text-[30px] lg:leading-9 lg:font-semibold lg:tracking-[-0.75px]">
               Projects
             </h1>
 
-            <p className="text-foreground-secondary text-base leading-6">
+            <p className="text-task-status-label text-sm leading-5">
               Manage and create your projects
             </p>
           </div>
@@ -32,12 +32,12 @@ export function ProjectsList({ projects }: ProjectsListProps) {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 lg:hidden">
+        <div className="mx-auto grid w-full max-w-[1280px] grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 lg:hidden">
           {projects.map((project) => (
             <ProjectCard key={project.id} project={project} />
           ))}
         </div>
-        <div className="hidden grid-cols-3 gap-6 lg:grid">
+        <div className="mx-auto hidden w-full max-w-[1280px] grid-cols-3 gap-6 lg:grid">
           {projects.map((project) => (
             <ProjectCard key={project.id} project={project} />
           ))}

@@ -67,34 +67,34 @@ export function EpicDetailsModal({
         role="dialog"
         aria-modal="true"
         aria-label="Epic details"
-        className="bg-surface relative z-10 flex max-h-[calc(100dvh-16px)] w-full flex-col overflow-hidden rounded-t-[32px] shadow-[0_-4px_12px_rgba(4,27,60,0.06)] md:max-h-[calc(100dvh-48px)] md:max-w-[672px] md:rounded-md md:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)]"
+        className="bg-surface relative z-10 flex h-[91dvh] max-h-[calc(100dvh-12px)] md:h-auto w-full flex-col overflow-hidden rounded-t-[24px] shadow-[0_-4px_12px_rgba(4,27,60,0.06)] md:max-h-[calc(100dvh-48px)] md:max-w-[672px] md:rounded-md md:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)]"
       >
         <div
           aria-hidden="true"
-          className="bg-outline/30 mx-auto mt-8 h-[6px] w-12 shrink-0 rounded-full md:hidden"
+          className="bg-outline/30 mx-auto mt-4 h-1 w-10 shrink-0 rounded-full md:hidden"
         />
 
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          <div className="px-6 pt-6 md:px-8 md:pt-8">
+        <div className="min-h-0 flex flex-1 flex-col overflow-y-auto overscroll-contain md:block">
+          <div className="shrink-0 px-4 pt-3 md:px-8 md:pt-8">
             <div className="flex items-center justify-between gap-4">
               <div className="min-w-0">
                 {status === 'success' && epic ? (
                   <div className="flex min-w-0 items-center gap-2">
                     <EpicIcon aria-hidden="true" />
 
-                    <p className="text-foreground/60 truncate text-xs leading-4 font-bold tracking-[0.6px] uppercase">
+                    <p className="text-foreground/60 truncate text-[11px] leading-4 font-bold tracking-[0.6px] uppercase md:text-xs">
                       {epic.epicId}
                     </p>
                   </div>
                 ) : (
-                  <p className="text-foreground/60 text-xs leading-4 font-bold tracking-[0.6px] uppercase">
+                  <p className="text-foreground/60 text-[11px] leading-4 font-bold tracking-[0.6px] uppercase md:text-xs">
                     Epic Details
                   </p>
                 )}
               </div>
 
               <div className="flex shrink-0 items-center gap-3">
-                <div className="text-foreground-secondary flex items-center gap-1 rounded-xs p-1.5 text-xs leading-5 font-medium md:gap-2 md:px-3 md:py-1.5 md:text-sm">
+                <div className="text-foreground-secondary flex items-center gap-1 rounded-xs p-1.5 text-[11px] leading-4 font-medium md:gap-2 md:px-3 md:py-1.5 md:text-sm md:leading-5">
                   <CopyLinkIcon aria-hidden="true" />
                   <span>Copy link</span>
                 </div>
@@ -112,8 +112,8 @@ export function EpicDetailsModal({
             </div>
 
             {status === 'success' && epic && (
-              <div className="border-outline/50 md:border-surface-highest mt-3 rounded-md border p-2 md:mt-4 md:rounded-[12px] md:p-3">
-                <h2 className="text-foreground text-base leading-[25px] font-semibold break-words md:text-xl md:leading-8 md:font-bold">
+              <div className="border-outline/50 md:border-surface-highest mt-2 rounded-md border p-2 md:mt-4 md:rounded-[12px] md:p-3">
+                <h2 className="text-foreground text-[13px] leading-5 font-semibold break-words md:text-xl md:leading-8 md:font-bold">
                   {epic.title}
                 </h2>
               </div>

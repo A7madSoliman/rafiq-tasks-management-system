@@ -2,12 +2,24 @@ import DeadlineIcon from '@/assets/icons/epics/deadline.svg';
 import CompletedIcon from '@/assets/icons/validation-passed.svg';
 import { cn } from '@/lib/cn';
 import type { CreatedTask } from '../schemas/created-task-schema';
+import { TASK_STATUSES, type TaskStatus } from '../constants/task-statuses';
 
 type TaskBoardCardProps = {
   task: CreatedTask;
   assigneeName?: string | null;
+  mobile?: boolean;
 };
 
+const MOBILE_STATUS_BADGES: Record<TaskStatus, string> = {
+  TO_DO: 'bg-surface-nested text-foreground',
+  IN_PROGRESS: 'bg-surface-highest text-primary',
+  BLOCKED: 'bg-error-container text-on-error-container',
+  IN_REVIEW: 'bg-surface-nested text-foreground',
+  READY_FOR_QA: 'bg-task-status-qa text-on-primary',
+  REOPENED: 'bg-error text-on-primary',
+  READY_FOR_PRODUCTION: 'bg-task-status-production text-on-primary',
+  DONE: 'bg-success text-on-success',
+};
 function getInitials(name: string): string {
   return name
     .trim()
@@ -37,7 +49,7 @@ function formatDueDate(value: string): string {
     .toUpperCase();
 }
 
-export function TaskBoardCard({ task, assigneeName }: TaskBoardCardProps) {
+export function TaskBoardCard({ task, assigneeName, mobile = false }: TaskBoardCardProps) {
   const isDone = task.status === 'DONE';
   const isBlocked = task.status === 'BLOCKED';
 
@@ -66,6 +78,84 @@ export function TaskBoardCard({ task, assigneeName }: TaskBoardCardProps) {
 
   const hasFooter = isDone || Boolean(dateLabel) || Boolean(initials);
 
+  if (mobile) {
+    const statusLabel = TASK_STATUSES.find((status) => status.value === task.status)?.boardLabel;
+
+    return (
+      <article
+        className={cn(
+          'flex min-h-[122px] min-w-0 flex-col gap-3 rounded-md border p-4',
+          'shadow-[0_2px_4px_rgba(0,0,0,0.02)]',
+          isBlocked ? 'border-error/10 bg-error-container/20' : 'border-outline/10 bg-surface',
+        )}
+      >
+        <div className="flex min-h-5 items-center justify-between gap-2">
+          {task.task_id ? (
+            <span className="text-task-status-label min-w-0 truncate text-[10px] leading-4 font-medium uppercase">
+              {task.task_id}
+            </span>
+          ) : (
+            <span aria-hidden="true" />
+          )}
+
+          <span
+            className={cn(
+              'ml-auto inline-flex max-w-[65%] shrink-0 items-center rounded-xs px-2 py-1',
+              'text-[10px] leading-3 font-bold tracking-[0.3px] uppercase',
+              MOBILE_STATUS_BADGES[task.status],
+            )}
+          >
+            {statusLabel ?? task.status}
+          </span>
+        </div>
+
+        <h3
+          className={cn(
+            'text-foreground line-clamp-2 text-sm leading-5 font-medium break-words',
+            isDone && 'text-foreground/60 decoration-foreground/50 line-through',
+          )}
+        >
+          {task.title}
+        </h3>
+
+        {hasFooter && (
+          <div className="mt-auto flex min-h-6 items-center justify-between gap-2">
+            {isDone ? (
+              <div className="text-task-status-production flex items-center gap-2">
+                <CompletedIcon aria-hidden="true" />
+                <span className="text-[10px] leading-[15px] font-bold">COMPLETED</span>
+              </div>
+            ) : task.due_date && dateLabel ? (
+              <div className={cn('flex items-center gap-2', dateColor)}>
+                <DeadlineIcon aria-hidden="true" className="shrink-0 [&_path]:fill-current" />
+                <time dateTime={task.due_date} className="text-[10px] leading-[15px] font-bold">
+                  {dateLabel}
+                </time>
+              </div>
+            ) : (
+              <span aria-hidden="true" />
+            )}
+
+            {initials && (
+              <span
+                title={assigneeName ?? undefined}
+                aria-label={`Assigned to ${assigneeName}`}
+                className={cn(
+                  'ml-auto flex size-6 shrink-0 items-center justify-center rounded-xl',
+                  'border text-[10px] leading-[15px] font-bold',
+                  task.status === 'IN_PROGRESS'
+                    ? 'border-surface bg-primary-container text-on-primary'
+                    : 'border-surface bg-surface-nested text-foreground',
+                )}
+              >
+                {initials}
+              </span>
+            )}
+          </div>
+        )}
+      </article>
+    );
+  }
   return (
     <article
       className={cn(
