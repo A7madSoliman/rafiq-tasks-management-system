@@ -3,10 +3,16 @@ import NoTasksIcon from '@/assets/icons/tasks/no-tasks.svg';
 
 import { cn } from '@/lib/cn';
 import { TASK_STATUSES, type TaskStatus } from '../constants/task-statuses';
+import type { CreatedTask } from '../schemas/created-task-schema';
+
+import { TaskBoardCard } from './task-board-card';
 
 type TaskBoardColumnProps = {
   status: (typeof TASK_STATUSES)[number];
-  count: number;
+  tasks: readonly CreatedTask[];
+  onAddTask: () => void;
+  assigneeNamesById: ReadonlyMap<string, string>;
+  showAddButton?: boolean;
 };
 
 const STATUS_STYLES: Record<
@@ -50,13 +56,19 @@ const STATUS_STYLES: Record<
   },
 };
 
-export function TaskBoardColumn({ status, count }: TaskBoardColumnProps) {
+export function TaskBoardColumn({
+  status,
+  tasks,
+  onAddTask,
+  assigneeNamesById,
+  showAddButton = true,
+}: TaskBoardColumnProps) {
   const styles = STATUS_STYLES[status.value];
 
   return (
     <section
       aria-label={`${status.label} tasks`}
-      className="flex h-full w-72 shrink-0 flex-col gap-4"
+      className="flex w-full min-w-0 flex-col gap-4 lg:h-full lg:w-72 lg:shrink-0"
     >
       <header className="flex h-[19px] shrink-0 items-center px-1">
         <div className="flex items-center gap-2">
@@ -67,33 +79,50 @@ export function TaskBoardColumn({ status, count }: TaskBoardColumnProps) {
           </h2>
 
           <span
-            aria-label={`${count} tasks`}
+            aria-label={`${tasks.length} tasks`}
             className={cn(
               'rounded-xs px-1.5 py-0.5 text-[10px] leading-[15px] font-bold',
               styles.count,
             )}
           >
-            {count}
+            {tasks.length}
           </span>
         </div>
       </header>
 
       <div className="flex min-h-0 flex-1 flex-col gap-3">
-        <button
-          type="button"
-          className="border-outline/30 text-foreground-secondary/60 flex h-[52px] w-full shrink-0 items-center justify-center gap-2 rounded-md border-2 border-dashed text-xs leading-4 font-bold tracking-[1.2px] uppercase"
-        >
-          <AddTaskIcon aria-hidden="true" />
-          <span>Add New Task</span>
-        </button>
+        {showAddButton && (
+          <button
+            type="button"
+            onClick={onAddTask}
+            className="border-outline/30 text-foreground-secondary/60 flex h-[52px] w-full shrink-0 items-center justify-center gap-2 rounded-md border-2 border-dashed text-xs leading-4 font-bold tracking-[1.2px] uppercase"
+          >
+            <AddTaskIcon aria-hidden="true" />
+            <span>Add New Task</span>
+          </button>
+        )}
 
-        <div className="bg-surface-low/30 border-outline/30 flex min-h-[240px] flex-1 flex-col items-center justify-center gap-3 rounded-md border border-dashed text-center">
-          <NoTasksIcon aria-hidden="true" />
+        {tasks.length === 0 ? (
+          <div className="bg-surface-low/30 border-outline/30 flex min-h-[240px] flex-1 flex-col items-center justify-center gap-3 rounded-md border border-dashed text-center">
+            <NoTasksIcon aria-hidden="true" />
 
-          <p className="text-task-status-todo text-[11px] leading-[16.5px] font-bold tracking-[1.1px] uppercase">
-            No Tasks
-          </p>
-        </div>
+            <p className="text-task-status-todo text-[11px] leading-[16.5px] font-bold tracking-[1.1px] uppercase">
+              No Tasks
+            </p>
+          </div>
+        ) : (
+          <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pb-2">
+            {tasks.map((task) => (
+              <TaskBoardCard
+                key={task.id}
+                task={task}
+                assigneeName={
+                  task.assignee_id ? (assigneeNamesById.get(task.assignee_id) ?? null) : null
+                }
+              />
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

@@ -18,6 +18,7 @@ import { EPICS_PAGE_SIZE } from '../constants/epics-pagination';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useEpicDetails } from '../hooks/use-epic-details';
 import { EpicDetailsModal } from './epic-details-modal';
+import { CreateTaskDialog } from '@/features/tasks/components/create-task-dialog';
 
 type ProjectEpicsScreenProps = {
   projectId: string;
@@ -29,6 +30,7 @@ export function ProjectEpicsScreen({ projectId }: ProjectEpicsScreenProps) {
   const searchTerm = searchParams.get('search')?.trim() ?? '';
   const [searchInput, setSearchInput] = useState(searchTerm);
   const [selectedEpicId, setSelectedEpicId] = useState<string | null>(null);
+  const [taskEpicId, setTaskEpicId] = useState<string | null>(null);
   const pageFromUrl = Number(searchParams.get('page') ?? '1');
   const currentPage = Number.isInteger(pageFromUrl) && pageFromUrl > 0 ? pageFromUrl : 1;
   const { epics, totalCount, status, hasMore, isLoadingMore, loadMoreError, loadMore, retry } =
@@ -65,6 +67,10 @@ export function ProjectEpicsScreen({ projectId }: ProjectEpicsScreenProps) {
 
   const handleCloseEpicDetails = useCallback(() => {
     setSelectedEpicId(null);
+  }, []);
+
+  const handleAddTaskFromEpic = useCallback((epicId: string) => {
+    setTaskEpicId(epicId);
   }, []);
 
   useEffect(() => {
@@ -269,12 +275,23 @@ export function ProjectEpicsScreen({ projectId }: ProjectEpicsScreenProps) {
       </Link>
 
       <EpicDetailsModal
-        isOpen={selectedEpicId !== null}
+        isOpen={selectedEpicId !== null && taskEpicId === null}
         epic={selectedEpic}
         status={epicDetailsStatus === 'idle' ? 'loading' : epicDetailsStatus}
         errorMessage={epicDetailsErrorMessage}
         onClose={handleCloseEpicDetails}
+        onAddTask={handleAddTaskFromEpic}
       />
+
+      {taskEpicId && (
+        <CreateTaskDialog
+          projectId={projectId}
+          isOpen
+          initialEpicId={taskEpicId}
+          onClose={() => setTaskEpicId(null)}
+          onCreated={() => setSelectedEpicId(null)}
+        />
+      )}
     </div>
   );
 }
