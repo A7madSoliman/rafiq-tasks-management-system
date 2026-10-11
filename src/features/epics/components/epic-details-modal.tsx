@@ -15,6 +15,7 @@ type EpicDetailsModalProps = {
   status: EpicDetailsModalStatus;
   errorMessage: string | null;
   onClose: () => void;
+  onAddTask: (epicId: string) => void;
 };
 
 export function EpicDetailsModal({
@@ -23,6 +24,7 @@ export function EpicDetailsModal({
   status,
   errorMessage,
   onClose,
+  onAddTask,
 }: EpicDetailsModalProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -134,7 +136,9 @@ export function EpicDetailsModal({
             </div>
           )}
 
-          {status === 'success' && epic && <EpicDetailsContent epic={epic} />}
+          {status === 'success' && epic && (
+            <EpicDetailsContent epic={epic} onAddTask={() => onAddTask(epic.id)} />
+          )}
         </div>
       </section>
     </div>

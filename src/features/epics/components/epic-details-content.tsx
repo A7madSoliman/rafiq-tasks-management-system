@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 
 type EpicDetailsContentProps = {
   epic: ProjectEpic;
+  onAddTask: () => void;
 };
 
 type EpicMetaItemProps = {
@@ -55,7 +56,7 @@ function EpicUserValue({ name }: { name: string }) {
   );
 }
 
-export function EpicDetailsContent({ epic }: EpicDetailsContentProps) {
+export function EpicDetailsContent({ epic, onAddTask }: EpicDetailsContentProps) {
   return (
     <div className="flex flex-col gap-5 px-6 pt-4 pb-8 md:gap-8 md:px-8 md:pt-8">
       <div className="border-outline/50 md:border-surface-highest min-h-[110px] rounded-md border p-2 md:min-h-[150px] md:rounded-[12px] md:p-3">
@@ -109,6 +110,7 @@ export function EpicDetailsContent({ epic }: EpicDetailsContentProps) {
 
           <button
             type="button"
+            onClick={onAddTask}
             className="text-primary flex shrink-0 items-center gap-1 px-3 py-1.5 text-sm leading-5 font-semibold"
           >
             <AddTaskIcon aria-hidden="true" />
@@ -128,7 +130,7 @@ export function EpicDetailsContent({ epic }: EpicDetailsContentProps) {
             No tasks have been added to this epic yet
           </p>
 
-          <Button type="button" className="mt-4 gap-2 py-[10px]">
+          <Button type="button" onClick={onAddTask} className="mt-4 gap-2 py-[10px]">
             <AddIcon aria-hidden="true" />
             Add New Task
           </Button>

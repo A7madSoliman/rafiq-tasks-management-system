@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { TASK_STATUSES, type TaskStatus } from '../constants/task-statuses';
 import { createTaskSchema, type CreateTaskFormValues } from '../schemas/create-task-schema';
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useProjectMembers } from '@/features/projects/hooks/use-project-members';
 import { useTaskEpics } from '../hooks/use-task-epics';
 import { useRouter } from 'next/navigation';
@@ -71,6 +71,7 @@ export function CreateTaskForm({
     register,
     handleSubmit,
     control,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<CreateTaskFormValues>({
     resolver: zodResolver(createTaskSchema),
@@ -92,6 +93,15 @@ export function CreateTaskForm({
   });
 
   const dueDateRegistration = register('dueDate');
+
+  // The epic options load asynchronously; select the originating epic once available.
+  useEffect(() => {
+    if (epicsStatus !== 'success' || !initialEpicId) return;
+
+    if (epics.some((epic) => epic.id === initialEpicId)) {
+      setValue('epicId', initialEpicId);
+    }
+  }, [epics, epicsStatus, initialEpicId, setValue]);
 
   function openDatePicker() {
     const input = dueDateInputRef.current;

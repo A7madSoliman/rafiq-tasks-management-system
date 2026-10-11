@@ -12,7 +12,7 @@ type CreateTaskDialogProps = {
   projectId: string;
   isOpen: boolean;
   onClose: () => void;
-  onCreated: (task: CreatedTask) => void;
+  onCreated?: (task: CreatedTask) => void;
   initialEpicId?: string | null;
   initialStatus?: TaskStatus;
 };
