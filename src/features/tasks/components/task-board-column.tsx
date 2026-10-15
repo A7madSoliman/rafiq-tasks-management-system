@@ -13,6 +13,8 @@ type TaskBoardColumnProps = {
   onAddTask: () => void;
   assigneeNamesById: ReadonlyMap<string, string>;
   showAddButton?: boolean;
+  loadState: 'loading' | 'success' | 'error';
+  onRetry: () => void;
 };
 
 const STATUS_STYLES: Record<
@@ -61,6 +63,8 @@ export function TaskBoardColumn({
   tasks,
   onAddTask,
   assigneeNamesById,
+  loadState,
+  onRetry,
   showAddButton = true,
 }: TaskBoardColumnProps) {
   const styles = STATUS_STYLES[status.value];
@@ -79,13 +83,17 @@ export function TaskBoardColumn({
           </h2>
 
           <span
-            aria-label={`${tasks.length} tasks`}
+            aria-label={
+              loadState === 'success'
+                ? `${tasks.length} tasks`
+                : `${status.label} tasks ${loadState}`
+            }
             className={cn(
               'rounded-xs px-1.5 py-0.5 text-[10px] leading-[15px] font-bold',
               styles.count,
             )}
           >
-            {tasks.length}
+            {loadState === 'success' ? tasks.length : '—'}
           </span>
         </div>
       </header>
@@ -102,7 +110,30 @@ export function TaskBoardColumn({
           </button>
         )}
 
-        {tasks.length === 0 ? (
+        {loadState === 'loading' ? (
+          <div
+            role="status"
+            aria-label={`Loading ${status.label} tasks`}
+            className="bg-surface border-outline/10 h-28 animate-pulse rounded-md border p-4"
+          >
+            <div className="bg-surface-icon h-3 w-3/4 rounded-xs" />
+            <div className="bg-surface-icon mt-3 h-3 w-1/2 rounded-xs" />
+          </div>
+        ) : loadState === 'error' ? (
+          <div className="bg-surface-low/30 border-outline/30 flex min-h-[240px] flex-1 flex-col items-center justify-center gap-3 rounded-md border border-dashed p-4 text-center">
+            <p role="alert" className="text-error text-xs">
+              Failed to load tasks
+            </p>
+
+            <button
+              type="button"
+              onClick={onRetry}
+              className="text-primary text-sm font-semibold underline"
+            >
+              Retry
+            </button>
+          </div>
+        ) : tasks.length === 0 ? (
           <div className="bg-surface-low/30 border-outline/30 flex min-h-[240px] flex-1 flex-col items-center justify-center gap-3 rounded-md border border-dashed text-center">
             <NoTasksIcon aria-hidden="true" />
 
