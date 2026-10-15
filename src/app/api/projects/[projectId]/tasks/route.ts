@@ -6,6 +6,7 @@ import { createTaskSchema } from '@/features/tasks/schemas/create-task-schema';
 import { canCreateTask } from '@/features/tasks/utils/can-create-task';
 import { verifyAccessToken } from '@/lib/auth/session';
 import { createdTaskSchema } from '@/features/tasks/schemas/created-task-schema';
+import { TASK_STATUSES } from '@/features/tasks/constants/task-statuses';
 
 type TasksRouteContext = {
   params: Promise<{
@@ -300,6 +301,12 @@ export async function GET(request: Request, { params }: TasksRouteContext) {
   const limit = limitParam === null ? 100 : Number(limitParam);
   const offset = offsetParam === null ? 0 : Number(offsetParam);
 
+  const status = requestUrl.searchParams.get('status');
+
+  if (status !== null && !TASK_STATUSES.some((item) => item.value === status)) {
+    return NextResponse.json({ message: 'Invalid task status.' }, { status: 400 });
+  }
+
   if (
     !Number.isSafeInteger(limit) ||
     limit < 1 ||
@@ -409,6 +416,9 @@ export async function GET(request: Request, { params }: TasksRouteContext) {
     const tasksUrl = new URL('/rest/v1/tasks', supabaseUrl);
 
     tasksUrl.searchParams.set('project_id', `eq.${projectId}`);
+    if (status !== null) {
+      tasksUrl.searchParams.set('status', `eq.${status}`);
+    }
     tasksUrl.searchParams.set(
       'select',
       'id,task_id,project_id,title,description,epic_id,assignee_id,due_date,status',
