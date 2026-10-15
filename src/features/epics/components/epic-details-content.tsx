@@ -1,5 +1,6 @@
-import type { ReactNode } from 'react';
+'use client';
 
+import type { ReactNode } from 'react';
 import type { ProjectEpic } from '../types/project-epic';
 import { formatEpicDetailsDate } from '../utils/format-epic-details-date';
 import AddIcon from '@/assets/icons/epics/add.svg';
@@ -11,6 +12,10 @@ import { Button } from '@/components/ui/button';
 type EpicDetailsContentProps = {
   epic: ProjectEpic;
   onAddTask: () => void;
+  description: string;
+  onDescriptionChange: (value: string) => void;
+  onDescriptionBlur: () => void;
+  isSaving: boolean;
 };
 
 type EpicMetaItemProps = {
@@ -58,13 +63,27 @@ function EpicUserValue({ name }: { name: string }) {
   );
 }
 
-export function EpicDetailsContent({ epic, onAddTask }: EpicDetailsContentProps) {
+export function EpicDetailsContent({
+  epic,
+  onAddTask,
+  description,
+  onDescriptionChange,
+  onDescriptionBlur,
+  isSaving,
+}: EpicDetailsContentProps) {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3 px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] md:flex-none md:gap-8 md:px-8 md:pt-8 md:pb-8">
       <div className="border-outline/50 md:border-surface-highest min-h-[80px] shrink-0 rounded-md border p-2 md:min-h-[150px] md:rounded-[12px] md:p-3">
-        <p className="text-foreground-muted md:text-foreground text-xs leading-[18px] break-words md:text-base md:leading-[26px]">
-          {epic.description?.trim() || 'No description provided'}
-        </p>
+        <textarea
+          aria-label="Epic description"
+          placeholder="No description provided"
+          value={description}
+          maxLength={500}
+          disabled={isSaving}
+          onChange={(event) => onDescriptionChange(event.target.value)}
+          onBlur={onDescriptionBlur}
+          className="text-foreground placeholder:text-foreground-muted min-h-[62px] w-full resize-none bg-transparent text-xs leading-[18px] outline-none md:min-h-[124px] md:text-base md:leading-[26px]"
+        />
       </div>
 
       <div className="grid shrink-0 grid-cols-1 gap-2 md:grid-cols-2 md:gap-4">
