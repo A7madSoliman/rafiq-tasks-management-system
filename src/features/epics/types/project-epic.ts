@@ -14,5 +14,5 @@ export type ProjectEpic = {
   createdAt: string;
   deadline: string | null;
   createdBy: EpicUser;
-  assignee: EpicUser | null;
+  assignee: Pick<EpicUser, 'userId' | 'name'> | null;
 };

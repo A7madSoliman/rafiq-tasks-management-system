@@ -16,6 +16,8 @@ type EpicDetailsModalProps = {
   onClose: () => void;
   onAddTask: (epicId: string) => void;
   onTitleSaved: (epicId: string, title: string) => void;
+  onAssigneeSaved: (epicId: string, assignee: ProjectEpic['assignee']) => void;
+  onDeadlineSaved: (epicId: string, deadline: ProjectEpic['deadline']) => void;
 };
 
 type Field = 'title' | 'description';
@@ -39,6 +41,8 @@ function EpicDetailsModalContent({
   onClose,
   onAddTask,
   onTitleSaved,
+  onAssigneeSaved,
+  onDeadlineSaved,
 }: EpicDetailsModalProps) {
   const initialValues: Values = {
     title: epic?.title ?? '',
@@ -335,6 +339,8 @@ function EpicDetailsModalContent({
               onDescriptionChange={(value) => updateField('description', value)}
               onDescriptionBlur={() => saveOnBlur('description')}
               isSaving={isSaving}
+              onAssigneeSaved={onAssigneeSaved}
+              onDeadlineSaved={onDeadlineSaved}
             />
           )}
         </div>

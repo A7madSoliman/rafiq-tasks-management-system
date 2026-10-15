@@ -42,7 +42,7 @@ export function ProjectEpicsScreen({ projectId }: ProjectEpicsScreenProps) {
     loadMoreError,
     loadMore,
     retry,
-    updateEpicTitle,
+    updateEpic,
   } = useProjectEpics(projectId, currentPage, searchTerm);
   const {
     epic: selectedEpic,
@@ -290,7 +290,9 @@ export function ProjectEpicsScreen({ projectId }: ProjectEpicsScreenProps) {
         errorMessage={epicDetailsErrorMessage}
         onClose={handleCloseEpicDetails}
         onAddTask={handleAddTaskFromEpic}
-        onTitleSaved={updateEpicTitle}
+        onTitleSaved={(epicId, title) => updateEpic(epicId, { title })}
+        onAssigneeSaved={(epicId, assignee) => updateEpic(epicId, { assignee })}
+        onDeadlineSaved={(epicId, deadline) => updateEpic(epicId, { deadline })}
       />
 
       {taskEpicId && (

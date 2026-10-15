@@ -345,8 +345,8 @@ export function useProjectEpics(projectId: string, currentPage = 1, searchTerm =
     void loadEpics(currentPage);
   }
 
-  const updateEpicTitle = useCallback(
-    (epicId: string, title: string) => {
+  const updateEpic = useCallback(
+    (epicId: string, changes: Partial<Pick<ProjectEpic, 'title' | 'assignee' | 'deadline'>>) => {
       setState((current) => {
         if (
           current.projectId !== projectId ||
@@ -359,7 +359,7 @@ export function useProjectEpics(projectId: string, currentPage = 1, searchTerm =
 
         return {
           ...current,
-          epics: current.epics.map((epic) => (epic.id === epicId ? { ...epic, title } : epic)),
+          epics: current.epics.map((epic) => (epic.id === epicId ? { ...epic, ...changes } : epic)),
         };
       });
     },
@@ -375,6 +375,6 @@ export function useProjectEpics(projectId: string, currentPage = 1, searchTerm =
     loadMoreError: isCurrentQuery ? state.loadMoreError : false,
     loadMore,
     retry,
-    updateEpicTitle,
+    updateEpic,
   };
 }
