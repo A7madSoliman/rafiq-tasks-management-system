@@ -33,8 +33,17 @@ export function ProjectEpicsScreen({ projectId }: ProjectEpicsScreenProps) {
   const [taskEpicId, setTaskEpicId] = useState<string | null>(null);
   const pageFromUrl = Number(searchParams.get('page') ?? '1');
   const currentPage = Number.isInteger(pageFromUrl) && pageFromUrl > 0 ? pageFromUrl : 1;
-  const { epics, totalCount, status, hasMore, isLoadingMore, loadMoreError, loadMore, retry } =
-    useProjectEpics(projectId, currentPage, searchTerm);
+  const {
+    epics,
+    totalCount,
+    status,
+    hasMore,
+    isLoadingMore,
+    loadMoreError,
+    loadMore,
+    retry,
+    updateEpic,
+  } = useProjectEpics(projectId, currentPage, searchTerm);
   const {
     epic: selectedEpic,
     status: epicDetailsStatus,
@@ -281,6 +290,9 @@ export function ProjectEpicsScreen({ projectId }: ProjectEpicsScreenProps) {
         errorMessage={epicDetailsErrorMessage}
         onClose={handleCloseEpicDetails}
         onAddTask={handleAddTaskFromEpic}
+        onTitleSaved={(epicId, title) => updateEpic(epicId, { title })}
+        onAssigneeSaved={(epicId, assignee) => updateEpic(epicId, { assignee })}
+        onDeadlineSaved={(epicId, deadline) => updateEpic(epicId, { deadline })}
       />
 
       {taskEpicId && (

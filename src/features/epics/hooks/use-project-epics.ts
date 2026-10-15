@@ -2,9 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-
 import { parseContentRangeTotal } from '@/features/projects/utils/parse-content-range';
-
 import { EPICS_PAGE_SIZE } from '../constants/epics-pagination';
 import type { ProjectEpic } from '../types/project-epic';
 import { isProjectEpics } from '../utils/map-project-epics';
@@ -347,6 +345,27 @@ export function useProjectEpics(projectId: string, currentPage = 1, searchTerm =
     void loadEpics(currentPage);
   }
 
+  const updateEpic = useCallback(
+    (epicId: string, changes: Partial<Pick<ProjectEpic, 'title' | 'assignee' | 'deadline'>>) => {
+      setState((current) => {
+        if (
+          current.projectId !== projectId ||
+          current.page !== currentPage ||
+          current.searchTerm !== normalizedSearchTerm ||
+          current.status !== 'success'
+        ) {
+          return current;
+        }
+
+        return {
+          ...current,
+          epics: current.epics.map((epic) => (epic.id === epicId ? { ...epic, ...changes } : epic)),
+        };
+      });
+    },
+    [projectId, currentPage, normalizedSearchTerm],
+  );
+
   return {
     epics: isCurrentQuery ? state.epics : [],
     totalCount: isCurrentQuery ? state.totalCount : 0,
@@ -356,5 +375,6 @@ export function useProjectEpics(projectId: string, currentPage = 1, searchTerm =
     loadMoreError: isCurrentQuery ? state.loadMoreError : false,
     loadMore,
     retry,
+    updateEpic,
   };
 }

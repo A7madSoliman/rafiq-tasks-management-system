@@ -47,6 +47,7 @@ export async function GET(request: Request, { params }: ProjectEpicsRouteContext
   const epicsUrl = new URL('/rest/v1/project_epics', supabaseUrl);
 
   epicsUrl.searchParams.set('project_id', `eq.${projectId}`);
+  epicsUrl.searchParams.set('order', 'created_at.desc,id.desc');
 
   if (searchTerm) {
     epicsUrl.searchParams.set('title', `ilike.%${searchTerm}%`);
