@@ -84,7 +84,7 @@ export function TaskBoardColumn({
 
           <span
             aria-label={
-              loadState === 'success'
+              loadState === 'success' || tasks.length > 0
                 ? `${tasks.length} tasks`
                 : `${status.label} tasks ${loadState}`
             }
@@ -93,7 +93,7 @@ export function TaskBoardColumn({
               styles.count,
             )}
           >
-            {loadState === 'success' ? tasks.length : '—'}
+            {loadState === 'success' || tasks.length > 0 ? tasks.length : '—'}
           </span>
         </div>
       </header>
@@ -110,7 +110,7 @@ export function TaskBoardColumn({
           </button>
         )}
 
-        {loadState === 'loading' ? (
+        {loadState === 'loading' && (
           <div
             role="status"
             aria-label={`Loading ${status.label} tasks`}
@@ -119,7 +119,8 @@ export function TaskBoardColumn({
             <div className="bg-surface-icon h-3 w-3/4 rounded-xs" />
             <div className="bg-surface-icon mt-3 h-3 w-1/2 rounded-xs" />
           </div>
-        ) : loadState === 'error' ? (
+        )}
+        {loadState === 'error' && (
           <div className="bg-surface-low/30 border-outline/30 flex min-h-[240px] flex-1 flex-col items-center justify-center gap-3 rounded-md border border-dashed p-4 text-center">
             <p role="alert" className="text-error text-xs">
               Failed to load tasks
@@ -133,7 +134,8 @@ export function TaskBoardColumn({
               Retry
             </button>
           </div>
-        ) : tasks.length === 0 ? (
+        )}
+        {loadState === 'success' && tasks.length === 0 && (
           <div className="bg-surface-low/30 border-outline/30 flex min-h-[240px] flex-1 flex-col items-center justify-center gap-3 rounded-md border border-dashed text-center">
             <NoTasksIcon aria-hidden="true" />
 
@@ -141,7 +143,8 @@ export function TaskBoardColumn({
               No Tasks
             </p>
           </div>
-        ) : (
+        )}
+        {tasks.length > 0 && (
           <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pb-2">
             {tasks.map((task) => (
               <TaskBoardCard
