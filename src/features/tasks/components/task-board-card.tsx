@@ -161,7 +161,7 @@ export function TaskBoardCard({ task, assigneeName, mobile = false }: TaskBoardC
       className={cn(
         'flex w-full flex-col rounded-md border p-4',
         'shadow-[0_2px_4px_rgba(0,0,0,0.02)]',
-        isDone ? 'min-h-[94px] gap-4' : 'min-h-[113px] gap-2',
+        isDone ? 'min-h-[113px] gap-4' : 'min-h-[113px] gap-2',
         isBlocked ? 'border-error/10 bg-error-container/20' : 'border-outline/10 bg-surface',
       )}
     >

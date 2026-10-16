@@ -1,23 +1,30 @@
 import MobileSearchIcon from '@/assets/icons/tasks/mobile-search.svg';
 import MobileAddTaskIcon from '@/assets/icons/tasks/mobile-add-task.svg';
 import NoTasksIcon from '@/assets/icons/tasks/no-tasks.svg';
-
 import { Button } from '@/components/ui/button';
-
 import type { CreatedTask } from '../schemas/created-task-schema';
-
 import { TaskBoardCard } from './task-board-card';
+import type { TaskStatus } from '../constants/task-statuses';
 
 type TaskBoardMobileScreenProps = {
   tasks: readonly CreatedTask[];
   assigneeNamesById: ReadonlyMap<string, string>;
   onAddTask: () => void;
+  isLoading: boolean;
+  failedStatuses: readonly {
+    value: TaskStatus;
+    label: string;
+  }[];
+  onRetryStatus: (status: TaskStatus) => void;
 };
 
 export function TaskBoardMobileScreen({
   tasks,
   assigneeNamesById,
   onAddTask,
+  isLoading,
+  failedStatuses,
+  onRetryStatus,
 }: TaskBoardMobileScreenProps) {
   const isEmpty = tasks.length === 0;
 
@@ -53,7 +60,35 @@ export function TaskBoardMobileScreen({
         </Button>
       </div>
 
-      {isEmpty ? (
+      {isLoading && (
+        <div
+          role="status"
+          aria-label="Loading tasks"
+          className="bg-surface mt-7 animate-pulse rounded-md p-4"
+        >
+          <div className="bg-surface-icon h-3 w-3/4 rounded-xs" />
+          <div className="bg-surface-icon mt-3 h-3 w-1/2 rounded-xs" />
+        </div>
+      )}
+
+      {failedStatuses.length > 0 && (
+        <div role="alert" className="bg-surface mt-5 flex flex-wrap gap-3 rounded-md p-4">
+          <p className="text-error w-full text-xs">Failed to load some task statuses.</p>
+
+          {failedStatuses.map(({ value, label }) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => onRetryStatus(value)}
+              className="text-primary text-xs font-semibold underline"
+            >
+              Retry {label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {isEmpty && !isLoading && failedStatuses.length === 0 && (
         <div className="bg-surface-low/30 border-outline/30 mt-7 flex min-h-[320px] flex-1 flex-col items-center justify-center gap-3 rounded-md border border-dashed text-center">
           <NoTasksIcon aria-hidden="true" />
 
@@ -61,7 +96,8 @@ export function TaskBoardMobileScreen({
             No Tasks
           </p>
         </div>
-      ) : (
+      )}
+      {!isEmpty && (
         <div aria-label="Tasks" className="mt-7 flex min-w-0 flex-col gap-3">
           {tasks.map((task) => (
             <TaskBoardCard

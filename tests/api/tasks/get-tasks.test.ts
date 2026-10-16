@@ -238,4 +238,34 @@ describe('GET /api/projects/[projectId]/tasks', () => {
 
     expect(response.status).toBe(502);
   });
+
+  it('rejects an invalid task status', async () => {
+    const response = await GET(createRequest('?status=INVALID'), context);
+
+    expect(response.status).toBe(400);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('filters tasks by the requested status', async () => {
+    const fetchMock = mockProjectAccess();
+
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify([task]), {
+        status: 200,
+        headers: {
+          'Content-Range': '0-0/1',
+        },
+      }),
+    );
+
+    const response = await GET(createRequest('?status=IN_PROGRESS'), context);
+
+    expect(response.status).toBe(200);
+
+    const [tasksUrl] = fetchMock.mock.calls[2] as [URL, RequestInit];
+
+    expect(tasksUrl.searchParams.get('project_id')).toBe(`eq.${PROJECT_ID}`);
+
+    expect(tasksUrl.searchParams.get('status')).toBe('eq.IN_PROGRESS');
+  });
 });

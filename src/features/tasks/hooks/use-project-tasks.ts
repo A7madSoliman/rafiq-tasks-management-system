@@ -1,51 +1,65 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { parseContentRangeTotal } from '@/features/projects/utils/parse-content-range';
 import { createdTaskSchema, type CreatedTask } from '../schemas/created-task-schema';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { TASK_STATUSES, type TaskStatus } from '../constants/task-statuses';
 
 type ProjectTasksStatus = 'loading' | 'success' | 'error';
 
-type ProjectTasksState = {
-  projectId: string;
+type ProjectTasksColumn = {
   tasks: CreatedTask[];
   status: ProjectTasksStatus;
+};
+
+type ProjectTasksState = {
+  projectId: string;
+  columns: Partial<Record<TaskStatus, ProjectTasksColumn>>;
 };
 
 const PAGE_SIZE = 100;
 
 export function useProjectTasks(projectId: string) {
   const router = useRouter();
-
-  const [retryCount, setRetryCount] = useState(0);
-
   const [state, setState] = useState<ProjectTasksState>({
     projectId,
-    tasks: [],
-    status: 'loading',
+    columns: {},
   });
 
-  useEffect(() => {
-    if (!projectId) return;
+  const controllersRef = useRef(new Map<TaskStatus, AbortController>());
 
-    const controller = new AbortController();
+  const loadColumn = useCallback(
+    async (status: TaskStatus) => {
+      if (!projectId) return;
 
-    async function loadTasks() {
-      const allTasks: CreatedTask[] = [];
+      controllersRef.current.get(status)?.abort();
+
+      const controller = new AbortController();
+      controllersRef.current.set(status, controller);
+
+      setState((current) => ({
+        projectId,
+        columns: {
+          ...(current.projectId === projectId ? current.columns : {}),
+          [status]: { tasks: [], status: 'loading' },
+        },
+      }));
+
+      const tasks: CreatedTask[] = [];
       let offset = 0;
 
       try {
         while (!controller.signal.aborted) {
           const params = new URLSearchParams({
+            status,
             limit: String(PAGE_SIZE),
             offset: String(offset),
           });
 
           const response = await fetch(
-            `/api/projects/${encodeURIComponent(projectId)}/tasks?${params.toString()}`,
+            `/api/projects/${encodeURIComponent(projectId)}/tasks?${params}`,
             {
-              method: 'GET',
               signal: controller.signal,
               cache: 'no-store',
             },
@@ -59,86 +73,85 @@ export function useProjectTasks(projectId: string) {
             return;
           }
 
-          const totalCount = parseContentRangeTotal(response.headers.get('content-range'));
+          const total = parseContentRangeTotal(response.headers.get('content-range'));
 
           const data: unknown = await response.json().catch(() => null);
 
           if (controller.signal.aborted) return;
 
-          const parsedTasks = createdTaskSchema.array().safeParse(data);
+          const parsed = createdTaskSchema.array().safeParse(data);
 
           if (
             !response.ok ||
-            totalCount === null ||
-            !parsedTasks.success ||
-            parsedTasks.data.some((task) => task.project_id !== projectId)
+            total === null ||
+            !parsed.success ||
+            parsed.data.some((task) => task.project_id !== projectId || task.status !== status)
           ) {
-            setState({
-              projectId,
-              tasks: [],
-              status: 'error',
-            });
+            throw new Error('Invalid column response');
+          }
+
+          tasks.push(...parsed.data);
+
+          if (tasks.length >= total) {
+            setState((current) =>
+              current.projectId === projectId
+                ? {
+                    ...current,
+                    columns: {
+                      ...current.columns,
+                      [status]: { tasks, status: 'success' },
+                    },
+                  }
+                : current,
+            );
 
             return;
           }
 
-          allTasks.push(...parsedTasks.data);
-
-          if (allTasks.length >= totalCount) {
-            setState({
-              projectId,
-              tasks: allTasks,
-              status: 'success',
-            });
-
-            return;
+          if (parsed.data.length === 0) {
+            throw new Error('Incomplete column response');
           }
 
-          if (parsedTasks.data.length === 0) {
-            setState({
-              projectId,
-              tasks: [],
-              status: 'error',
-            });
-
-            return;
-          }
-
-          offset += parsedTasks.data.length;
+          offset += parsed.data.length;
         }
       } catch {
         if (controller.signal.aborted) return;
 
-        setState({
-          projectId,
-          tasks: [],
-          status: 'error',
-        });
+        setState((current) =>
+          current.projectId === projectId
+            ? {
+                ...current,
+                columns: {
+                  ...current.columns,
+                  [status]: { tasks: [], status: 'error' },
+                },
+              }
+            : current,
+        );
+      } finally {
+        if (controllersRef.current.get(status) === controller) {
+          controllersRef.current.delete(status);
+        }
       }
-    }
+    },
+    [projectId, router],
+  );
 
-    void loadTasks();
-
-    return () => {
-      controller.abort();
-    };
-  }, [projectId, retryCount, router]);
-
-  const isCurrentProject = state.projectId === projectId;
-
-  function retry() {
-    setState({
-      projectId,
-      tasks: [],
-      status: 'loading',
+  useEffect(() => {
+    TASK_STATUSES.forEach(({ value }) => {
+      void loadColumn(value);
     });
 
-    setRetryCount((count) => count + 1);
-  }
+    const controllers = controllersRef.current;
+
+    return () => {
+      controllers.forEach((controller) => controller.abort());
+      controllers.clear();
+    };
+  }, [loadColumn]);
 
   return {
-    tasks: isCurrentProject ? state.tasks : [],
-    status: isCurrentProject ? state.status : 'loading',
-    retry,
+    columns: state.projectId === projectId ? state.columns : {},
+    retryColumn: loadColumn,
   };
 }

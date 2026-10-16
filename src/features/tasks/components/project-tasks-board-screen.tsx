@@ -32,12 +32,7 @@ export function ProjectTasksBoardScreen() {
     tasks: [],
   });
 
-  const {
-    tasks: savedTasks,
-    status: tasksStatus,
-    retry: retryTasks,
-  } = useProjectTasks(projectId ?? '');
-
+  const { columns, retryColumn } = useProjectTasks(projectId ?? '');
   const {
     members,
     status: membersStatus,
@@ -49,6 +44,16 @@ export function ProjectTasksBoardScreen() {
   );
 
   const localTasks = localTasksState.projectId === projectId ? localTasksState.tasks : [];
+
+  const savedTasks = TASK_STATUSES.flatMap(({ value }) => columns[value]?.tasks ?? []);
+
+  const isTasksLoading = TASK_STATUSES.some(
+    ({ value }) => !columns[value] || columns[value]?.status === 'loading',
+  );
+
+  const failedStatuses = TASK_STATUSES.filter(
+    ({ value }) => columns[value]?.status === 'error',
+  ).map(({ value, label }) => ({ value, label }));
 
   const savedTaskIds = new Set(savedTasks.map((task) => task.id));
 
@@ -104,27 +109,13 @@ export function ProjectTasksBoardScreen() {
     );
   }
 
-  if (projectStatus !== 'success' || tasksStatus === 'loading' || membersStatus === 'loading') {
+  if (projectStatus !== 'success') {
     return <ProjectTasksBoardLoadingState />;
   }
 
   return (
     <div className="min-w-0">
       <TaskBoardDesktopHeader />
-
-      {tasksStatus === 'error' && (
-        <div role="alert" className="mx-8 mb-4 flex items-center gap-4">
-          <p className="text-error text-sm">Unable to load saved tasks.</p>
-
-          <button
-            type="button"
-            onClick={retryTasks}
-            className="text-primary cursor-pointer text-sm font-semibold"
-          >
-            Retry
-          </button>
-        </div>
-      )}
 
       {membersStatus === 'error' && (
         <div role="alert" className="mx-8 mb-4 flex items-center gap-4">
@@ -153,6 +144,8 @@ export function ProjectTasksBoardScreen() {
                 key={status.value}
                 status={status}
                 tasks={visibleTasks.filter((task) => task.status === status.value)}
+                loadState={columns[status.value]?.status ?? 'loading'}
+                onRetry={() => void retryColumn(status.value)}
                 assigneeNamesById={assigneeNamesById}
                 onAddTask={() => handleOpenCreateTask(status.value)}
               />
@@ -165,6 +158,9 @@ export function ProjectTasksBoardScreen() {
         tasks={visibleTasks}
         assigneeNamesById={assigneeNamesById}
         onAddTask={() => handleOpenCreateTask('TO_DO')}
+        isLoading={isTasksLoading}
+        failedStatuses={failedStatuses}
+        onRetryStatus={(status) => void retryColumn(status)}
       />
       {projectId && (
         <CreateTaskDialog
