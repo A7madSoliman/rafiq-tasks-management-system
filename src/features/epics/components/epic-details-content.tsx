@@ -3,11 +3,8 @@
 import { useState, type ReactNode } from 'react';
 import type { ProjectEpic } from '../types/project-epic';
 import { formatEpicDetailsDate } from '../utils/format-epic-details-date';
-import AddIcon from '@/assets/icons/epics/add.svg';
 import DateIcon from '@/assets/icons/epics/details/date.svg';
-import TasksEmptyIcon from '@/assets/icons/epics/details/tasks-empty.svg';
-import AddTaskIcon from '@/assets/icons/epics/details/add-task.svg';
-import { Button } from '@/components/ui/button';
+import { EpicTasks } from './epic-tasks';
 import { useProjectMembers } from '@/features/projects/hooks/use-project-members';
 import { toast } from 'sonner';
 import { getTodayLocalDate } from '../utils/get-today-local-date';
@@ -241,50 +238,7 @@ export function EpicDetailsContent({
         </EpicMetaItem>
       </div>
 
-      <section
-        aria-labelledby="epic-tasks-heading"
-        className="flex min-h-[150px] flex-1 flex-col gap-2 overflow-y-auto overscroll-contain md:min-h-0 md:flex-none md:gap-6 md:overflow-visible"
-      >
-        <div className="bg-surface sticky top-0 z-10 flex shrink-0 items-center justify-between gap-4 md:static">
-          <h3
-            id="epic-tasks-heading"
-            className="text-foreground text-xs leading-5 font-semibold uppercase md:text-lg md:leading-7 md:normal-case"
-          >
-            Tasks
-          </h3>
-
-          <button
-            type="button"
-            onClick={onAddTask}
-            className="text-primary flex min-h-9 shrink-0 items-center gap-1 px-2 py-1 text-xs leading-5 font-semibold md:px-3 md:py-1.5 md:text-sm"
-          >
-            <AddTaskIcon aria-hidden="true" />
-            <span>Add Task</span>
-          </button>
-        </div>
-
-        <div className="bg-surface-low/50 border-outline/30 md:bg-surface-low flex min-h-[110px] min-w-0 flex-1 flex-col items-center justify-center rounded-md border-2 border-dashed px-3 py-3 text-center md:min-h-0 md:flex-none md:px-12 md:py-[50px]">
-          <div
-            aria-hidden="true"
-            className="bg-surface-nested mb-2 flex size-10 items-center justify-center rounded-[12px] md:mb-4 md:size-12"
-          >
-            <TasksEmptyIcon />
-          </div>
-
-          <p className="text-foreground max-w-[190px] text-[11px] leading-4 font-medium md:max-w-none md:text-base md:leading-6">
-            No tasks have been added to this epic yet
-          </p>
-
-          <Button
-            type="button"
-            onClick={onAddTask}
-            className="mt-2 gap-2 py-2 text-xs md:mt-4 md:py-[10px] md:text-sm"
-          >
-            <AddIcon aria-hidden="true" />
-            Add Task
-          </Button>
-        </div>
-      </section>
+      <EpicTasks projectId={epic.projectId} epicId={epic.id} onAddTask={onAddTask} />
     </div>
   );
 }
