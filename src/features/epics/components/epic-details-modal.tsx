@@ -18,6 +18,8 @@ type EpicDetailsModalProps = {
   onTitleSaved: (epicId: string, title: string) => void;
   onAssigneeSaved: (epicId: string, assignee: ProjectEpic['assignee']) => void;
   onDeadlineSaved: (epicId: string, deadline: ProjectEpic['deadline']) => void;
+  onTaskClick: (taskId: string) => void;
+  isTaskDetailsOpen: boolean;
 };
 
 type Field = 'title' | 'description';
@@ -43,6 +45,8 @@ function EpicDetailsModalContent({
   onTitleSaved,
   onAssigneeSaved,
   onDeadlineSaved,
+  onTaskClick,
+  isTaskDetailsOpen,
 }: EpicDetailsModalProps) {
   const initialValues: Values = {
     title: epic?.title ?? '',
@@ -185,6 +189,12 @@ function EpicDetailsModalContent({
     onClose();
   }
 
+  function handleTaskClick(taskId: string) {
+    if (savingRef.current || confirmOpen) return;
+
+    onTaskClick(taskId);
+  }
+
   function keepEditing() {
     skipAutoSaveRef.current = false;
     setConfirmOpen(false);
@@ -212,7 +222,9 @@ function EpicDetailsModalContent({
 
   useEffect(() => {
     function handleEscape(event: KeyboardEvent) {
-      if (event.key !== 'Escape' || confirmOpen) return;
+      if (event.key !== 'Escape' || confirmOpen || isTaskDetailsOpen) {
+        return;
+      }
 
       event.preventDefault();
       requestClose();
@@ -243,8 +255,9 @@ function EpicDetailsModalContent({
 
       <section
         role="dialog"
-        aria-modal="true"
         aria-label="Epic details"
+        inert={isTaskDetailsOpen}
+        aria-modal={!isTaskDetailsOpen}
         className="bg-surface relative z-10 flex h-[91dvh] max-h-[calc(100dvh-12px)] w-full flex-col overflow-hidden rounded-t-[24px] shadow-[0_-4px_12px_rgba(4,27,60,0.06)] md:h-auto md:max-h-[calc(100dvh-48px)] md:max-w-[672px] md:rounded-md md:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)]"
       >
         <div
@@ -341,6 +354,7 @@ function EpicDetailsModalContent({
               isSaving={isSaving}
               onAssigneeSaved={onAssigneeSaved}
               onDeadlineSaved={onDeadlineSaved}
+              onTaskClick={handleTaskClick}
             />
           )}
         </div>

@@ -20,7 +20,12 @@ const task = {
 const retry = vi.fn();
 function render() {
   return renderToStaticMarkup(
-    createElement(EpicTasks, { projectId: 'project', epicId: 'epic', onAddTask: vi.fn() }),
+    createElement(EpicTasks, {
+      projectId: 'project',
+      epicId: 'epic',
+      onAddTask: vi.fn(),
+      onTaskClick: vi.fn(),
+    }),
   );
 }
 
@@ -41,6 +46,7 @@ describe('epic task list', () => {
     expect(html).not.toContain('<img');
     expect(html).not.toMatch(/Overdue|menu/);
     expect(useEpicTasks).toHaveBeenCalledWith('project', 'epic');
+    expect(html).toContain('aria-label="View details for Cloud Database Schema"');
   });
 
   it('handles missing display fields and escapes user-provided content', () => {
