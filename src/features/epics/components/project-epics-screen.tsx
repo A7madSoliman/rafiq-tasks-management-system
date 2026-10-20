@@ -19,9 +19,16 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useEpicDetails } from '../hooks/use-epic-details';
 import { EpicDetailsModal } from './epic-details-modal';
 import { CreateTaskDialog } from '@/features/tasks/components/create-task-dialog';
+import { TaskDetailsDialog } from '@/features/tasks/components/task-details-dialog';
 
 type ProjectEpicsScreenProps = {
   projectId: string;
+};
+
+type SelectedEpicTask = {
+  projectId: string;
+  epicId: string;
+  taskId: string;
 };
 
 export function ProjectEpicsScreen({ projectId }: ProjectEpicsScreenProps) {
@@ -30,6 +37,7 @@ export function ProjectEpicsScreen({ projectId }: ProjectEpicsScreenProps) {
   const searchTerm = searchParams.get('search')?.trim() ?? '';
   const [searchInput, setSearchInput] = useState(searchTerm);
   const [selectedEpicId, setSelectedEpicId] = useState<string | null>(null);
+  const [selectedTask, setSelectedTask] = useState<SelectedEpicTask | null>(null);
   const [taskEpicId, setTaskEpicId] = useState<string | null>(null);
   const pageFromUrl = Number(searchParams.get('page') ?? '1');
   const currentPage = Number.isInteger(pageFromUrl) && pageFromUrl > 0 ? pageFromUrl : 1;
@@ -71,16 +79,44 @@ export function ProjectEpicsScreen({ projectId }: ProjectEpicsScreenProps) {
   }
 
   const handleSelectEpic = useCallback((epicId: string) => {
+    setSelectedTask(null);
     setSelectedEpicId(epicId);
   }, []);
 
   const handleCloseEpicDetails = useCallback(() => {
+    setSelectedTask(null);
     setSelectedEpicId(null);
   }, []);
 
   const handleAddTaskFromEpic = useCallback((epicId: string) => {
     setTaskEpicId(epicId);
   }, []);
+
+  const handleOpenTaskFromEpic = useCallback(
+    (taskId: string) => {
+      if (!selectedEpicId || taskEpicId !== null) return;
+
+      setSelectedTask({
+        projectId,
+        epicId: selectedEpicId,
+        taskId,
+      });
+    },
+    [projectId, selectedEpicId, taskEpicId],
+  );
+
+  const handleCloseTask = useCallback(() => {
+    setSelectedTask(null);
+  }, []);
+
+  const selectedTaskId =
+    selectedTask?.projectId === projectId &&
+    selectedTask?.epicId === selectedEpicId &&
+    taskEpicId === null
+      ? selectedTask.taskId
+      : null;
+
+  const isTaskDetailsOpen = selectedTaskId !== null;
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -293,6 +329,8 @@ export function ProjectEpicsScreen({ projectId }: ProjectEpicsScreenProps) {
         onTitleSaved={(epicId, title) => updateEpic(epicId, { title })}
         onAssigneeSaved={(epicId, assignee) => updateEpic(epicId, { assignee })}
         onDeadlineSaved={(epicId, deadline) => updateEpic(epicId, { deadline })}
+        onTaskClick={handleOpenTaskFromEpic}
+        isTaskDetailsOpen={isTaskDetailsOpen}
       />
 
       {taskEpicId && (
@@ -304,6 +342,7 @@ export function ProjectEpicsScreen({ projectId }: ProjectEpicsScreenProps) {
           onCreated={() => setSelectedEpicId(null)}
         />
       )}
+      <TaskDetailsDialog projectId={projectId} taskId={selectedTaskId} onClose={handleCloseTask} />
     </div>
   );
 }

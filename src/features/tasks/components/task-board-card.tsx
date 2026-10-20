@@ -8,6 +8,7 @@ type TaskBoardCardProps = {
   task: CreatedTask;
   assigneeName?: string | null;
   mobile?: boolean;
+  onTaskClick: (taskId: string) => void;
 };
 
 const MOBILE_STATUS_BADGES: Record<TaskStatus, string> = {
@@ -49,7 +50,12 @@ function formatDueDate(value: string): string {
     .toUpperCase();
 }
 
-export function TaskBoardCard({ task, assigneeName, mobile = false }: TaskBoardCardProps) {
+export function TaskBoardCard({
+  task,
+  assigneeName,
+  mobile = false,
+  onTaskClick,
+}: TaskBoardCardProps) {
   const isDone = task.status === 'DONE';
   const isBlocked = task.status === 'BLOCKED';
 
@@ -84,7 +90,7 @@ export function TaskBoardCard({ task, assigneeName, mobile = false }: TaskBoardC
     return (
       <article
         className={cn(
-          'flex min-h-[122px] min-w-0 flex-col gap-3 rounded-md border p-4',
+          'relative flex min-h-[122px] min-w-0 flex-col gap-3 rounded-md border p-4',
           'shadow-[0_2px_4px_rgba(0,0,0,0.02)]',
           isBlocked ? 'border-error/10 bg-error-container/20' : 'border-outline/10 bg-surface',
         )}
@@ -153,13 +159,20 @@ export function TaskBoardCard({ task, assigneeName, mobile = false }: TaskBoardC
             )}
           </div>
         )}
+
+        <button
+          type="button"
+          onClick={() => onTaskClick(task.id)}
+          aria-label={`View details for ${task.task_id ? `${task.task_id}: ` : ''}${task.title}`}
+          className="focus-visible:outline-primary absolute inset-0 z-10 cursor-pointer rounded-md focus-visible:outline-2 focus-visible:outline-offset-2"
+        />
       </article>
     );
   }
   return (
     <article
       className={cn(
-        'flex w-full flex-col rounded-md border p-4',
+        'relative flex w-full flex-col rounded-md border p-4',
         'shadow-[0_2px_4px_rgba(0,0,0,0.02)]',
         isDone ? 'min-h-[113px] gap-4' : 'min-h-[113px] gap-2',
         isBlocked ? 'border-error/10 bg-error-container/20' : 'border-outline/10 bg-surface',
@@ -216,6 +229,13 @@ export function TaskBoardCard({ task, assigneeName, mobile = false }: TaskBoardC
           )}
         </div>
       )}
+
+      <button
+        type="button"
+        onClick={() => onTaskClick(task.id)}
+        aria-label={`View details for ${task.task_id ? `${task.task_id}: ` : ''}${task.title}`}
+        className="focus-visible:outline-primary absolute inset-0 z-10 cursor-pointer rounded-md focus-visible:outline-2 focus-visible:outline-offset-2"
+      />
     </article>
   );
 }

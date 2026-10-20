@@ -16,6 +16,7 @@ type TaskBoardMobileScreenProps = {
     label: string;
   }[];
   onRetryStatus: (status: TaskStatus) => void;
+  onTaskClick: (taskId: string) => void;
 };
 
 export function TaskBoardMobileScreen({
@@ -25,6 +26,7 @@ export function TaskBoardMobileScreen({
   isLoading,
   failedStatuses,
   onRetryStatus,
+  onTaskClick,
 }: TaskBoardMobileScreenProps) {
   const isEmpty = tasks.length === 0;
 
@@ -104,6 +106,7 @@ export function TaskBoardMobileScreen({
               key={task.id}
               task={task}
               mobile
+              onTaskClick={onTaskClick}
               assigneeName={
                 task.assignee_id ? (assigneeNamesById.get(task.assignee_id) ?? null) : null
               }

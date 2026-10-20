@@ -14,9 +14,10 @@ type EpicTasksProps = {
   projectId: string;
   epicId: string;
   onAddTask: () => void;
+  onTaskClick: (taskId: string) => void;
 };
 
-export function EpicTasks({ projectId, epicId, onAddTask }: EpicTasksProps) {
+export function EpicTasks({ projectId, epicId, onAddTask, onTaskClick }: EpicTasksProps) {
   const { tasks, status, retry } = useEpicTasks(projectId, epicId);
 
   return (
@@ -95,7 +96,7 @@ export function EpicTasks({ projectId, epicId, onAddTask }: EpicTasksProps) {
             return (
               <li
                 key={task.id}
-                className="bg-surface border-surface-icon md:border-outline/15 grid min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-3 rounded-md border p-4 shadow-sm md:gap-y-1 md:rounded-none md:border-0 md:border-t md:shadow-none md:first:border-t-0"
+                className="bg-surface border-surface-icon md:border-outline/15 relative grid min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-3 rounded-md border p-4 shadow-sm md:gap-y-1 md:rounded-none md:border-0 md:border-t md:shadow-none md:first:border-t-0"
               >
                 <p className="text-foreground col-span-2 min-w-0 text-sm leading-5 font-semibold wrap-anywhere md:col-span-1 md:text-base md:leading-6 md:font-medium">
                   {task.title.trim() || 'Untitled task'}
@@ -126,6 +127,13 @@ export function EpicTasks({ projectId, epicId, onAddTask }: EpicTasksProps) {
                     {formatEpicDeadline(task.dueDate)}
                   </span>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={() => onTaskClick(task.id)}
+                  aria-label={`View details for ${task.title.trim() || 'Untitled task'}`}
+                  className="focus-visible:outline-primary absolute inset-0 z-10 cursor-pointer rounded-md focus-visible:outline-2 focus-visible:outline-offset-2"
+                />
               </li>
             );
           })}

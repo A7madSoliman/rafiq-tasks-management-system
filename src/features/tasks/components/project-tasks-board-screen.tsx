@@ -11,10 +11,16 @@ import { TaskBoardColumn } from './task-board-column';
 import { TaskBoardDesktopHeader } from './task-board-desktop-header';
 import { useProjectMembers } from '@/features/projects/hooks/use-project-members';
 import { TaskBoardMobileScreen } from './task-board-mobile-screen';
+import { TaskDetailsDialog } from './task-details-dialog';
 
 type LocalTasksState = {
   projectId: string;
   tasks: CreatedTask[];
+};
+
+type SelectedTask = {
+  projectId: string;
+  taskId: string;
 };
 
 export function ProjectTasksBoardScreen() {
@@ -31,6 +37,7 @@ export function ProjectTasksBoardScreen() {
     projectId: '',
     tasks: [],
   });
+  const [selectedTask, setSelectedTask] = useState<SelectedTask | null>(null);
 
   const { columns, retryColumn } = useProjectTasks(projectId ?? '');
   const {
@@ -67,6 +74,24 @@ export function ProjectTasksBoardScreen() {
   const handleCloseCreateTask = useCallback(() => {
     setIsCreateTaskOpen(false);
   }, []);
+
+  const handleOpenTask = useCallback(
+    (taskId: string) => {
+      if (!projectId) return;
+
+      setSelectedTask({
+        projectId,
+        taskId,
+      });
+    },
+    [projectId],
+  );
+
+  const handleCloseTask = useCallback(() => {
+    setSelectedTask(null);
+  }, []);
+
+  const selectedTaskId = selectedTask?.projectId === projectId ? selectedTask.taskId : null;
 
   const handleTaskCreated = useCallback(
     (task: CreatedTask) => {
@@ -148,6 +173,7 @@ export function ProjectTasksBoardScreen() {
                 onRetry={() => void retryColumn(status.value)}
                 assigneeNamesById={assigneeNamesById}
                 onAddTask={() => handleOpenCreateTask(status.value)}
+                onTaskClick={handleOpenTask}
               />
             ))}
           </div>
@@ -161,6 +187,7 @@ export function ProjectTasksBoardScreen() {
         isLoading={isTasksLoading}
         failedStatuses={failedStatuses}
         onRetryStatus={(status) => void retryColumn(status)}
+        onTaskClick={handleOpenTask}
       />
       {projectId && (
         <CreateTaskDialog
@@ -169,6 +196,14 @@ export function ProjectTasksBoardScreen() {
           onClose={handleCloseCreateTask}
           onCreated={handleTaskCreated}
           initialStatus={initialTaskStatus}
+        />
+      )}
+
+      {projectId && (
+        <TaskDetailsDialog
+          projectId={projectId}
+          taskId={selectedTaskId}
+          onClose={handleCloseTask}
         />
       )}
     </div>

@@ -18,6 +18,7 @@ type EpicDetailsContentProps = {
   isSaving: boolean;
   onAssigneeSaved: (epicId: string, assignee: ProjectEpic['assignee']) => void;
   onDeadlineSaved: (epicId: string, deadline: ProjectEpic['deadline']) => void;
+  onTaskClick: (taskId: string) => void;
 };
 
 type EpicMetaItemProps = {
@@ -74,6 +75,7 @@ export function EpicDetailsContent({
   onAssigneeSaved,
   onDeadlineSaved,
   isSaving,
+  onTaskClick,
 }: EpicDetailsContentProps) {
   const { members, status: membersStatus, retry } = useProjectMembers(epic.projectId);
   const [assigneeId, setAssigneeId] = useState(epic.assignee?.userId ?? '');
@@ -181,7 +183,6 @@ export function EpicDetailsContent({
           className="text-foreground placeholder:text-foreground-muted min-h-[62px] w-full resize-none bg-transparent text-xs leading-[18px] outline-none md:min-h-[124px] md:text-base md:leading-[26px]"
         />
       </div>
-
       <div className="grid shrink-0 grid-cols-1 gap-2 md:grid-cols-2 md:gap-4">
         <EpicMetaItem label="Assignee">
           {membersStatus === 'error' ? (
@@ -237,8 +238,12 @@ export function EpicDetailsContent({
           </div>
         </EpicMetaItem>
       </div>
-
-      <EpicTasks projectId={epic.projectId} epicId={epic.id} onAddTask={onAddTask} />
+      <EpicTasks
+        projectId={epic.projectId}
+        epicId={epic.id}
+        onAddTask={onAddTask}
+        onTaskClick={onTaskClick}
+      />
     </div>
   );
 }

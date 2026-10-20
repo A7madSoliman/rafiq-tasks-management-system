@@ -37,6 +37,7 @@ describe.each(['loading', 'error', 'success'] as const)('%s task column', (loadS
         onAddTask: vi.fn(),
         onRetry: vi.fn(),
         assigneeNamesById: new Map(),
+        onTaskClick: vi.fn(),
       }),
     );
 
@@ -67,6 +68,7 @@ describe.each(['loading', 'error', 'success'] as const)('%s task column', (loadS
         onAddTask: vi.fn(),
         onRetryStatus: vi.fn(),
         assigneeNamesById: new Map(),
+        onTaskClick: vi.fn(),
       }),
     );
 
