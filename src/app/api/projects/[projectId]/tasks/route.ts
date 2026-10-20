@@ -5,8 +5,9 @@ import { mapProjectMembers } from '@/features/projects/utils/map-project-members
 import { createTaskSchema } from '@/features/tasks/schemas/create-task-schema';
 import { canCreateTask } from '@/features/tasks/utils/can-create-task';
 import { verifyAccessToken } from '@/lib/auth/session';
-import { createdTaskSchema } from '@/features/tasks/schemas/created-task-schema';
 import { TASK_STATUSES } from '@/features/tasks/constants/task-statuses';
+import { mapProjectTasks } from '@/features/tasks/utils/map-project-tasks';
+import { parseContentRangeTotal } from '@/features/projects/utils/parse-content-range';
 
 type TasksRouteContext = {
   params: Promise<{
@@ -289,23 +290,20 @@ export async function POST(request: Request, { params }: TasksRouteContext) {
 export async function GET(request: Request, { params }: TasksRouteContext) {
   const { projectId } = await params;
 
+  // 1. Validate the project ID.
   if (!z.uuid().safeParse(projectId).success) {
     return NextResponse.json({ message: 'Invalid project ID.' }, { status: 400 });
   }
 
-  const requestUrl = new URL(request.url);
+  // 2. Read and validate pagination parameters.
+  const { searchParams } = new URL(request.url);
 
-  const limitParam = requestUrl.searchParams.get('limit');
-  const offsetParam = requestUrl.searchParams.get('offset');
+  const limitParam = searchParams.get('limit');
+  const offsetParam = searchParams.get('offset');
+  const status = searchParams.get('status');
 
   const limit = limitParam === null ? 100 : Number(limitParam);
   const offset = offsetParam === null ? 0 : Number(offsetParam);
-
-  const status = requestUrl.searchParams.get('status');
-
-  if (status !== null && !TASK_STATUSES.some((item) => item.value === status)) {
-    return NextResponse.json({ message: 'Invalid task status.' }, { status: 400 });
-  }
 
   if (
     !Number.isSafeInteger(limit) ||
@@ -317,6 +315,11 @@ export async function GET(request: Request, { params }: TasksRouteContext) {
     return NextResponse.json({ message: 'Invalid pagination parameters.' }, { status: 400 });
   }
 
+  if (status !== null && !TASK_STATUSES.some((item) => item.value === status)) {
+    return NextResponse.json({ message: 'Invalid task status.' }, { status: 400 });
+  }
+
+  // 3. Read the authenticated user's access token.
   const cookieStore = await cookies();
   const accessToken = cookieStore.get('access_token')?.value;
 
@@ -341,9 +344,10 @@ export async function GET(request: Request, { params }: TasksRouteContext) {
     const headers = {
       apikey: supabaseSecretKey,
       Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
     };
 
-    // Verify the project exists.
+    // 4. Verify that the requested project exists.
     const projectUrl = new URL('/rest/v1/projects', supabaseUrl);
 
     projectUrl.searchParams.set('id', `eq.${projectId}`);
@@ -376,7 +380,7 @@ export async function GET(request: Request, { params }: TasksRouteContext) {
       return NextResponse.json({ message: 'Invalid project response.' }, { status: 502 });
     }
 
-    // Verify membership. Viewers are allowed to read tasks.
+    // 5. Verify that the user belongs to this project.
     const membersUrl = new URL('/rest/v1/get_project_members', supabaseUrl);
 
     membersUrl.searchParams.set('project_id', `eq.${projectId}`);
@@ -412,20 +416,17 @@ export async function GET(request: Request, { params }: TasksRouteContext) {
       );
     }
 
-    // Load only tasks belonging to the requested project.
-    const tasksUrl = new URL('/rest/v1/tasks', supabaseUrl);
+    // 6. Fetch only the requested page from Supabase.
+    const tasksUrl = new URL('/rest/v1/project_tasks', supabaseUrl);
 
     tasksUrl.searchParams.set('project_id', `eq.${projectId}`);
+    tasksUrl.searchParams.set('limit', String(limit));
+    tasksUrl.searchParams.set('offset', String(offset));
+    tasksUrl.searchParams.set('order', 'created_at.desc,id.desc');
+
     if (status !== null) {
       tasksUrl.searchParams.set('status', `eq.${status}`);
     }
-    tasksUrl.searchParams.set(
-      'select',
-      'id,task_id,project_id,title,description,epic_id,assignee_id,due_date,status',
-    );
-    tasksUrl.searchParams.set('order', 'created_at.desc,id.desc');
-    tasksUrl.searchParams.set('limit', String(limit));
-    tasksUrl.searchParams.set('offset', String(offset));
 
     const tasksResponse = await fetch(tasksUrl, {
       method: 'GET',
@@ -436,31 +437,62 @@ export async function GET(request: Request, { params }: TasksRouteContext) {
       cache: 'no-store',
     });
 
+    // 7. Read pagination metadata from the backend.
+    const contentRange = tasksResponse.headers.get('content-range');
+    const totalCount = parseContentRangeTotal(contentRange);
+
+    const responseHeaders = new Headers({
+      'Cache-Control': 'no-store',
+    });
+
+    if (totalCount !== null && contentRange !== null) {
+      responseHeaders.set('Content-Range', contentRange);
+    }
+
+    // 8. Handle an offset beyond the available records.
+    if (tasksResponse.status === 416) {
+      if (totalCount === null) {
+        return NextResponse.json({ message: 'Invalid pagination metadata.' }, { status: 502 });
+      }
+
+      return NextResponse.json(
+        {
+          message: 'Requested task page is outside the available range.',
+        },
+        {
+          status: 416,
+          headers: responseHeaders,
+        },
+      );
+    }
+
     if (!tasksResponse.ok) {
       return NextResponse.json({ message: 'Unable to load project tasks.' }, { status: 502 });
     }
 
+    // The exact total count is required for pagination.
+    if (totalCount === null) {
+      return NextResponse.json({ message: 'Invalid pagination metadata.' }, { status: 502 });
+    }
+
+    // 9. Validate and normalize the returned tasks.
     const tasksData: unknown = await tasksResponse.json().catch(() => null);
 
-    const parsedTasks = createdTaskSchema.array().safeParse(tasksData);
+    const tasks = mapProjectTasks(tasksData);
 
-    if (!parsedTasks.success) {
+    if (
+      !tasks ||
+      tasks.length > limit ||
+      tasks.some(
+        (task) => task.project_id !== projectId || (status !== null && task.status !== status),
+      )
+    ) {
       return NextResponse.json({ message: 'Invalid project tasks response.' }, { status: 502 });
     }
 
-    if (parsedTasks.data.some((task) => task.project_id !== projectId)) {
-      return NextResponse.json({ message: 'Invalid project tasks response.' }, { status: 502 });
-    }
-
-    const responseHeaders = new Headers();
-    const contentRange = tasksResponse.headers.get('content-range');
-
-    if (contentRange) {
-      responseHeaders.set('Content-Range', contentRange);
-    }
-
-    return NextResponse.json(parsedTasks.data, {
-      status: 200,
+    // 10. Return the tasks and pagination metadata.
+    return NextResponse.json(tasks, {
+      status: tasksResponse.status,
       headers: responseHeaders,
     });
   } catch {
