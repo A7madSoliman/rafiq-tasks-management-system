@@ -15,6 +15,7 @@ type TaskBoardColumnProps = {
   showAddButton?: boolean;
   loadState: 'loading' | 'success' | 'error';
   onRetry: () => void;
+  onTaskClick: (taskId: string) => void;
 };
 
 const STATUS_STYLES: Record<
@@ -66,6 +67,7 @@ export function TaskBoardColumn({
   loadState,
   onRetry,
   showAddButton = true,
+  onTaskClick,
 }: TaskBoardColumnProps) {
   const styles = STATUS_STYLES[status.value];
 
@@ -150,6 +152,7 @@ export function TaskBoardColumn({
               <TaskBoardCard
                 key={task.id}
                 task={task}
+                onTaskClick={onTaskClick}
                 assigneeName={
                   task.assignee_id ? (assigneeNamesById.get(task.assignee_id) ?? null) : null
                 }
