@@ -6,7 +6,6 @@ import { useProjectMembers } from '@/features/projects/hooks/use-project-members
 import { TASK_STATUSES, type TaskStatus } from '../constants/task-statuses';
 import { useIsDesktop } from '../hooks/use-is-desktop';
 import { usePaginatedProjectTasks } from '../hooks/use-paginated-project-tasks';
-import { useProjectTasks } from '../hooks/use-project-tasks';
 import type { CreatedTask } from '../schemas/created-task-schema';
 import { CreateTaskDialog } from './create-task-dialog';
 import { ProjectTasksBoardLoadingState } from './project-tasks-board-loading-state';
@@ -93,12 +92,6 @@ function DesktopPaginatedColumn({
   );
 }
 
-/**
- * Temporary mobile data adapter.
- *
- * Phase 4 will replace the old multi-column data fetching
- * with a single unfiltered paginated request stream.
- */
 function MobileTasksContent({
   projectId,
   localTasks,
@@ -106,49 +99,41 @@ function MobileTasksContent({
   onAddTask,
   onTaskClick,
 }: MobileTasksContentProps) {
-  const { columns, retryColumn } = useProjectTasks(projectId);
+  const {
+    tasks: paginatedTasks,
+    status: loadState,
+    hasMore,
+    isLoadingMore,
+    loadMoreError,
+    loadMore,
+    retry,
+    retryLoadMore,
+  } = usePaginatedProjectTasks(projectId);
 
-  const savedTasks = TASK_STATUSES.flatMap(({ value }) => columns[value]?.tasks ?? []);
+  const loadedTaskIds = new Set(paginatedTasks.map((task) => task.id));
 
-  const isTasksLoading = TASK_STATUSES.some(
-    ({ value }) => !columns[value] || columns[value]?.status === 'loading',
-  );
-
-  const failedStatuses = TASK_STATUSES.filter(
-    ({ value }) => columns[value]?.status === 'error',
-  ).map(({ value, label }) => ({
-    value,
-    label,
-  }));
-
-  const savedTaskIds = new Set(savedTasks.map((task) => task.id));
-
-  const visibleTasks = [...localTasks.filter((task) => !savedTaskIds.has(task.id)), ...savedTasks];
+  const visibleTasks = [
+    ...localTasks.filter((task) => !loadedTaskIds.has(task.id)),
+    ...paginatedTasks,
+  ];
 
   return (
     <TaskBoardMobileScreen
       tasks={visibleTasks}
       assigneeNamesById={assigneeNamesById}
       onAddTask={onAddTask}
-      isLoading={isTasksLoading}
-      failedStatuses={failedStatuses}
-      onRetryStatus={(status) => {
-        void retryColumn(status);
-      }}
       onTaskClick={onTaskClick}
+      loadState={loadState}
+      hasMore={hasMore}
+      isLoadingMore={isLoadingMore}
+      loadMoreError={loadMoreError}
+      onLoadMore={loadMore}
+      onRetry={retry}
+      onRetryLoadMore={retryLoadMore}
     />
   );
 }
 
-/**
- * Shared screen state:
- * - Project context
- * - Create Task dialog
- * - Task Details dialog
- * - Newly created tasks
- *
- * Desktop and Mobile data loading are intentionally separated.
- */
 export function ProjectTasksBoardScreen() {
   const {
     projectId,

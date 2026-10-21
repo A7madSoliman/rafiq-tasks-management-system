@@ -99,10 +99,14 @@ describe.each(['loading', 'error', 'success'] as const)('%s task column', (loadS
     const html = renderToStaticMarkup(
       createElement(TaskBoardMobileScreen, {
         tasks: hasTasks ? [task] : [],
-        isLoading: loadState === 'loading',
-        failedStatuses: loadState === 'error' ? [TASK_STATUSES[0]] : [],
+        loadState,
+        hasMore: false,
+        isLoadingMore: false,
+        loadMoreError: false,
         onAddTask: vi.fn(),
-        onRetryStatus: vi.fn(),
+        onRetry: vi.fn(),
+        onLoadMore: vi.fn(),
+        onRetryLoadMore: vi.fn(),
         assigneeNamesById: new Map<string, string>(),
         onTaskClick: vi.fn(),
       }),
@@ -112,7 +116,7 @@ describe.each(['loading', 'error', 'success'] as const)('%s task column', (loadS
 
     expect(html.includes('Loading tasks')).toBe(loadState === 'loading');
 
-    expect(html.includes('Retry TO DO')).toBe(loadState === 'error');
+    expect(html.includes('Try Again')).toBe(loadState === 'error');
 
     expect(html.includes('No Tasks')).toBe(loadState === 'success' && !hasTasks);
 
@@ -167,5 +171,68 @@ describe('desktop pagination feedback', () => {
 
     expect(html).toContain('No Tasks');
     expect(html).toContain('aria-label="0 tasks"');
+  });
+
+  describe('mobile pagination feedback', () => {
+    type MobileProps = ComponentProps<typeof TaskBoardMobileScreen>;
+
+    function renderMobile(overrides: Partial<MobileProps> = {}): string {
+      const props: MobileProps = {
+        tasks: [task],
+        loadState: 'success',
+        hasMore: true,
+        isLoadingMore: false,
+        loadMoreError: false,
+        onAddTask: vi.fn(),
+        onRetry: vi.fn(),
+        onLoadMore: vi.fn(),
+        onRetryLoadMore: vi.fn(),
+        assigneeNamesById: new Map<string, string>(),
+        onTaskClick: vi.fn(),
+        ...overrides,
+      };
+
+      return renderToStaticMarkup(createElement(TaskBoardMobileScreen, props));
+    }
+
+    it('keeps loaded tasks visible while loading more', () => {
+      const html = renderMobile({
+        isLoadingMore: true,
+      });
+
+      expect(html).toContain(task.title);
+      expect(html).toContain('Loading more tasks...');
+    });
+
+    it('shows retry without removing loaded tasks', () => {
+      const html = renderMobile({
+        loadMoreError: true,
+      });
+
+      expect(html).toContain(task.title);
+      expect(html).toContain('Failed to load more tasks.');
+      expect(html).toContain('Try Again');
+    });
+
+    it('renders the empty state correctly', () => {
+      const html = renderMobile({
+        tasks: [],
+        hasMore: false,
+      });
+
+      expect(html).toContain('No Tasks');
+    });
+
+    it('shows an initial loading error', () => {
+      const html = renderMobile({
+        tasks: [],
+        loadState: 'error',
+        hasMore: false,
+      });
+
+      expect(html).toContain('Failed to load tasks.');
+      expect(html).toContain('Try Again');
+      expect(html).not.toContain('No Tasks');
+    });
   });
 });
