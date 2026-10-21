@@ -2,14 +2,15 @@
 
 import { useCallback, useState } from 'react';
 import { useCurrentProject } from '@/features/projects/context/current-project-context';
+import { useProjectMembers } from '@/features/projects/hooks/use-project-members';
 import { TASK_STATUSES, type TaskStatus } from '../constants/task-statuses';
-import { useProjectTasks } from '../hooks/use-project-tasks';
+import { useIsDesktop } from '../hooks/use-is-desktop';
+import { usePaginatedProjectTasks } from '../hooks/use-paginated-project-tasks';
 import type { CreatedTask } from '../schemas/created-task-schema';
 import { CreateTaskDialog } from './create-task-dialog';
 import { ProjectTasksBoardLoadingState } from './project-tasks-board-loading-state';
 import { TaskBoardColumn } from './task-board-column';
 import { TaskBoardDesktopHeader } from './task-board-desktop-header';
-import { useProjectMembers } from '@/features/projects/hooks/use-project-members';
 import { TaskBoardMobileScreen } from './task-board-mobile-screen';
 import { TaskDetailsDialog } from './task-details-dialog';
 
@@ -23,6 +24,116 @@ type SelectedTask = {
   taskId: string;
 };
 
+type DesktopPaginatedColumnProps = {
+  projectId: string;
+  status: (typeof TASK_STATUSES)[number];
+  localTasks: readonly CreatedTask[];
+  assigneeNamesById: ReadonlyMap<string, string>;
+  onAddTask: (status: TaskStatus) => void;
+  onTaskClick: (taskId: string) => void;
+};
+
+type MobileTasksContentProps = {
+  projectId: string;
+  localTasks: readonly CreatedTask[];
+  assigneeNamesById: ReadonlyMap<string, string>;
+  onAddTask: () => void;
+  onTaskClick: (taskId: string) => void;
+};
+
+/**
+ * Each desktop status column owns its own pagination state.
+ */
+function DesktopPaginatedColumn({
+  projectId,
+  status,
+  localTasks,
+  assigneeNamesById,
+  onAddTask,
+  onTaskClick,
+}: DesktopPaginatedColumnProps) {
+  const {
+    tasks: paginatedTasks,
+    totalCount,
+    status: loadState,
+    hasMore,
+    isLoadingMore,
+    loadMoreError,
+    loadMore,
+    retry,
+    retryLoadMore,
+  } = usePaginatedProjectTasks(projectId, status.value);
+
+  // Avoid displaying newly created tasks twice.
+  const loadedTaskIds = new Set(paginatedTasks.map((task) => task.id));
+
+  const localColumnTasks = localTasks.filter(
+    (task) => task.status === status.value && !loadedTaskIds.has(task.id),
+  );
+
+  const visibleTasks = [...localColumnTasks, ...paginatedTasks];
+
+  return (
+    <TaskBoardColumn
+      status={status}
+      tasks={visibleTasks}
+      totalCount={totalCount}
+      loadState={loadState}
+      hasMore={hasMore}
+      isLoadingMore={isLoadingMore}
+      loadMoreError={loadMoreError}
+      onLoadMore={loadMore}
+      onRetry={retry}
+      onRetryLoadMore={retryLoadMore}
+      onAddTask={() => onAddTask(status.value)}
+      onTaskClick={onTaskClick}
+      assigneeNamesById={assigneeNamesById}
+    />
+  );
+}
+
+function MobileTasksContent({
+  projectId,
+  localTasks,
+  assigneeNamesById,
+  onAddTask,
+  onTaskClick,
+}: MobileTasksContentProps) {
+  const {
+    tasks: paginatedTasks,
+    status: loadState,
+    hasMore,
+    isLoadingMore,
+    loadMoreError,
+    loadMore,
+    retry,
+    retryLoadMore,
+  } = usePaginatedProjectTasks(projectId);
+
+  const loadedTaskIds = new Set(paginatedTasks.map((task) => task.id));
+
+  const visibleTasks = [
+    ...localTasks.filter((task) => !loadedTaskIds.has(task.id)),
+    ...paginatedTasks,
+  ];
+
+  return (
+    <TaskBoardMobileScreen
+      tasks={visibleTasks}
+      assigneeNamesById={assigneeNamesById}
+      onAddTask={onAddTask}
+      onTaskClick={onTaskClick}
+      loadState={loadState}
+      hasMore={hasMore}
+      isLoadingMore={isLoadingMore}
+      loadMoreError={loadMoreError}
+      onLoadMore={loadMore}
+      onRetry={retry}
+      onRetryLoadMore={retryLoadMore}
+    />
+  );
+}
+
 export function ProjectTasksBoardScreen() {
   const {
     projectId,
@@ -31,15 +142,19 @@ export function ProjectTasksBoardScreen() {
     retry: retryProject,
   } = useCurrentProject();
 
+  const isDesktop = useIsDesktop();
+
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
+
   const [initialTaskStatus, setInitialTaskStatus] = useState<TaskStatus>('TO_DO');
+
   const [localTasksState, setLocalTasksState] = useState<LocalTasksState>({
     projectId: '',
     tasks: [],
   });
+
   const [selectedTask, setSelectedTask] = useState<SelectedTask | null>(null);
 
-  const { columns, retryColumn } = useProjectTasks(projectId ?? '');
   const {
     members,
     status: membersStatus,
@@ -50,21 +165,8 @@ export function ProjectTasksBoardScreen() {
     members.map((member) => [member.userId, member.name]),
   );
 
+  // Keep locally created tasks scoped to their project.
   const localTasks = localTasksState.projectId === projectId ? localTasksState.tasks : [];
-
-  const savedTasks = TASK_STATUSES.flatMap(({ value }) => columns[value]?.tasks ?? []);
-
-  const isTasksLoading = TASK_STATUSES.some(
-    ({ value }) => !columns[value] || columns[value]?.status === 'loading',
-  );
-
-  const failedStatuses = TASK_STATUSES.filter(
-    ({ value }) => columns[value]?.status === 'error',
-  ).map(({ value, label }) => ({ value, label }));
-
-  const savedTaskIds = new Set(savedTasks.map((task) => task.id));
-
-  const visibleTasks = [...localTasks.filter((task) => !savedTaskIds.has(task.id)), ...savedTasks];
 
   const handleOpenCreateTask = useCallback((status: TaskStatus) => {
     setInitialTaskStatus(status);
@@ -77,7 +179,9 @@ export function ProjectTasksBoardScreen() {
 
   const handleOpenTask = useCallback(
     (taskId: string) => {
-      if (!projectId) return;
+      if (!projectId) {
+        return;
+      }
 
       setSelectedTask({
         projectId,
@@ -115,7 +219,7 @@ export function ProjectTasksBoardScreen() {
     [projectId],
   );
 
-  // Handle project loading failure before rendering its details.
+  // Project loading/error states.
   if (projectStatus === 'error') {
     return (
       <div className="flex min-h-[50dvh] flex-col items-center justify-center gap-4 px-6 text-center">
@@ -134,7 +238,7 @@ export function ProjectTasksBoardScreen() {
     );
   }
 
-  if (projectStatus !== 'success') {
+  if (projectStatus !== 'success' || !projectId || isDesktop === null) {
     return <ProjectTasksBoardLoadingState />;
   }
 
@@ -156,56 +260,49 @@ export function ProjectTasksBoardScreen() {
         </div>
       )}
 
-      <section aria-label="Tasks Kanban board" className="hidden min-w-0 lg:block">
-        <div
-          role="region"
-          aria-label="Task status columns"
-          tabIndex={0}
-          className="w-full overflow-x-auto px-8 pb-8"
-        >
-          <div className="flex h-[calc(100dvh-282px)] min-h-[520px] w-max gap-6 pb-4">
-            {TASK_STATUSES.map((status) => (
-              <TaskBoardColumn
-                key={status.value}
-                status={status}
-                tasks={visibleTasks.filter((task) => task.status === status.value)}
-                loadState={columns[status.value]?.status ?? 'loading'}
-                onRetry={() => void retryColumn(status.value)}
-                assigneeNamesById={assigneeNamesById}
-                onAddTask={() => handleOpenCreateTask(status.value)}
-                onTaskClick={handleOpenTask}
-              />
-            ))}
+      {isDesktop ? (
+        <section aria-label="Tasks Kanban board" className="min-w-0">
+          <div
+            role="region"
+            aria-label="Task status columns"
+            tabIndex={0}
+            className="w-full overflow-x-auto px-8 pb-8"
+          >
+            <div className="flex h-[calc(100dvh-282px)] min-h-[520px] w-max gap-6 pb-4">
+              {TASK_STATUSES.map((status) => (
+                <DesktopPaginatedColumn
+                  key={`${projectId}:${status.value}`}
+                  projectId={projectId}
+                  status={status}
+                  localTasks={localTasks}
+                  assigneeNamesById={assigneeNamesById}
+                  onAddTask={handleOpenCreateTask}
+                  onTaskClick={handleOpenTask}
+                />
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      ) : (
+        <MobileTasksContent
+          key={projectId}
+          projectId={projectId}
+          localTasks={localTasks}
+          assigneeNamesById={assigneeNamesById}
+          onAddTask={() => handleOpenCreateTask('TO_DO')}
+          onTaskClick={handleOpenTask}
+        />
+      )}
 
-      <TaskBoardMobileScreen
-        tasks={visibleTasks}
-        assigneeNamesById={assigneeNamesById}
-        onAddTask={() => handleOpenCreateTask('TO_DO')}
-        isLoading={isTasksLoading}
-        failedStatuses={failedStatuses}
-        onRetryStatus={(status) => void retryColumn(status)}
-        onTaskClick={handleOpenTask}
+      <CreateTaskDialog
+        projectId={projectId}
+        isOpen={isCreateTaskOpen}
+        onClose={handleCloseCreateTask}
+        onCreated={handleTaskCreated}
+        initialStatus={initialTaskStatus}
       />
-      {projectId && (
-        <CreateTaskDialog
-          projectId={projectId}
-          isOpen={isCreateTaskOpen}
-          onClose={handleCloseCreateTask}
-          onCreated={handleTaskCreated}
-          initialStatus={initialTaskStatus}
-        />
-      )}
 
-      {projectId && (
-        <TaskDetailsDialog
-          projectId={projectId}
-          taskId={selectedTaskId}
-          onClose={handleCloseTask}
-        />
-      )}
+      <TaskDetailsDialog projectId={projectId} taskId={selectedTaskId} onClose={handleCloseTask} />
     </div>
   );
 }

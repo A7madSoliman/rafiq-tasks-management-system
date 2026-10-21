@@ -1,3 +1,7 @@
+'use client';
+
+import { useEffect, useRef } from 'react';
+
 import AddTaskIcon from '@/assets/icons/tasks/add-task.svg';
 import NoTasksIcon from '@/assets/icons/tasks/no-tasks.svg';
 
@@ -10,12 +14,22 @@ import { TaskBoardCard } from './task-board-card';
 type TaskBoardColumnProps = {
   status: (typeof TASK_STATUSES)[number];
   tasks: readonly CreatedTask[];
+  totalCount: number;
+
   onAddTask: () => void;
+  onTaskClick: (taskId: string) => void;
   assigneeNamesById: ReadonlyMap<string, string>;
+
   showAddButton?: boolean;
+
   loadState: 'loading' | 'success' | 'error';
   onRetry: () => void;
-  onTaskClick: (taskId: string) => void;
+
+  hasMore: boolean;
+  isLoadingMore: boolean;
+  loadMoreError: boolean;
+  onLoadMore: () => void;
+  onRetryLoadMore: () => void;
 };
 
 const STATUS_STYLES: Record<
@@ -62,14 +76,68 @@ const STATUS_STYLES: Record<
 export function TaskBoardColumn({
   status,
   tasks,
+  totalCount,
   onAddTask,
+  onTaskClick,
   assigneeNamesById,
   loadState,
   onRetry,
   showAddButton = true,
-  onTaskClick,
+  hasMore,
+  isLoadingMore,
+  loadMoreError,
+  onLoadMore,
+  onRetryLoadMore,
 }: TaskBoardColumnProps) {
   const styles = STATUS_STYLES[status.value];
+
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const loadMoreSentinelRef = useRef<HTMLDivElement | null>(null);
+
+  // Observe the end of this specific column's scroll container.
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef.current;
+    const sentinel = loadMoreSentinelRef.current;
+
+    if (
+      !scrollContainer ||
+      !sentinel ||
+      loadState !== 'success' ||
+      !hasMore ||
+      isLoadingMore ||
+      loadMoreError
+    ) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+
+        if (entry?.isIntersecting) {
+          onLoadMore();
+        }
+      },
+      {
+        root: scrollContainer,
+        rootMargin: '0px 0px 80px 0px',
+        threshold: 0,
+      },
+    );
+
+    observer.observe(sentinel);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [loadState, hasMore, isLoadingMore, loadMoreError, onLoadMore, tasks.length]);
+
+  const displayedCount =
+    loadState === 'success'
+      ? Math.max(totalCount, tasks.length)
+      : tasks.length > 0
+        ? tasks.length
+        : null;
 
   return (
     <section
@@ -86,8 +154,8 @@ export function TaskBoardColumn({
 
           <span
             aria-label={
-              loadState === 'success' || tasks.length > 0
-                ? `${tasks.length} tasks`
+              displayedCount !== null
+                ? `${displayedCount} tasks`
                 : `${status.label} tasks ${loadState}`
             }
             className={cn(
@@ -95,7 +163,7 @@ export function TaskBoardColumn({
               styles.count,
             )}
           >
-            {loadState === 'success' || tasks.length > 0 ? tasks.length : '—'}
+            {displayedCount ?? '—'}
           </span>
         </div>
       </header>
@@ -112,6 +180,7 @@ export function TaskBoardColumn({
           </button>
         )}
 
+        {/* Initial loading state */}
         {loadState === 'loading' && (
           <div
             role="status"
@@ -122,6 +191,8 @@ export function TaskBoardColumn({
             <div className="bg-surface-icon mt-3 h-3 w-1/2 rounded-xs" />
           </div>
         )}
+
+        {/* Initial loading error */}
         {loadState === 'error' && (
           <div className="bg-surface-low/30 border-outline/30 flex min-h-[240px] flex-1 flex-col items-center justify-center gap-3 rounded-md border border-dashed p-4 text-center">
             <p role="alert" className="text-error text-xs">
@@ -137,6 +208,8 @@ export function TaskBoardColumn({
             </button>
           </div>
         )}
+
+        {/* Empty status column */}
         {loadState === 'success' && tasks.length === 0 && (
           <div className="bg-surface-low/30 border-outline/30 flex min-h-[240px] flex-1 flex-col items-center justify-center gap-3 rounded-md border border-dashed text-center">
             <NoTasksIcon aria-hidden="true" />
@@ -146,8 +219,14 @@ export function TaskBoardColumn({
             </p>
           </div>
         )}
+
+        {/* Scrollable task list */}
         {tasks.length > 0 && (
-          <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pb-2">
+          <div
+            ref={scrollContainerRef}
+            aria-label={`${status.label} task list`}
+            className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pb-2"
+          >
             {tasks.map((task) => (
               <TaskBoardCard
                 key={task.id}
@@ -158,6 +237,39 @@ export function TaskBoardColumn({
                 }
               />
             ))}
+
+            {/* Observer target for the next page */}
+            {hasMore && (
+              <div ref={loadMoreSentinelRef} aria-hidden="true" className="h-1 shrink-0" />
+            )}
+
+            {/* Loading an additional page */}
+            {isLoadingMore && (
+              <div
+                role="status"
+                aria-label={`Loading more ${status.label} tasks`}
+                className="text-foreground-secondary py-3 text-center text-xs"
+              >
+                Loading more tasks...
+              </div>
+            )}
+
+            {/* Error while loading an additional page */}
+            {loadMoreError && (
+              <div className="flex flex-col items-center gap-2 py-3 text-center">
+                <p role="alert" className="text-error text-xs">
+                  Failed to load more tasks.
+                </p>
+
+                <button
+                  type="button"
+                  onClick={onRetryLoadMore}
+                  className="text-primary text-xs font-semibold underline"
+                >
+                  Try Again
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

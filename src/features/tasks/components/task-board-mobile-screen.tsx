@@ -1,34 +1,73 @@
+'use client';
+
+import { useEffect, useRef } from 'react';
+
 import MobileSearchIcon from '@/assets/icons/tasks/mobile-search.svg';
 import MobileAddTaskIcon from '@/assets/icons/tasks/mobile-add-task.svg';
 import NoTasksIcon from '@/assets/icons/tasks/no-tasks.svg';
 import { Button } from '@/components/ui/button';
 import type { CreatedTask } from '../schemas/created-task-schema';
 import { TaskBoardCard } from './task-board-card';
-import type { TaskStatus } from '../constants/task-statuses';
 
 type TaskBoardMobileScreenProps = {
   tasks: readonly CreatedTask[];
   assigneeNamesById: ReadonlyMap<string, string>;
   onAddTask: () => void;
-  isLoading: boolean;
-  failedStatuses: readonly {
-    value: TaskStatus;
-    label: string;
-  }[];
-  onRetryStatus: (status: TaskStatus) => void;
   onTaskClick: (taskId: string) => void;
+
+  loadState: 'loading' | 'success' | 'error';
+  onRetry: () => void;
+
+  hasMore: boolean;
+  isLoadingMore: boolean;
+  loadMoreError: boolean;
+  onLoadMore: () => void;
+  onRetryLoadMore: () => void;
 };
 
 export function TaskBoardMobileScreen({
   tasks,
   assigneeNamesById,
   onAddTask,
-  isLoading,
-  failedStatuses,
-  onRetryStatus,
   onTaskClick,
+  loadState,
+  onRetry,
+  hasMore,
+  isLoadingMore,
+  loadMoreError,
+  onLoadMore,
+  onRetryLoadMore,
 }: TaskBoardMobileScreenProps) {
-  const isEmpty = tasks.length === 0;
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+
+    if (!sentinel || loadState !== 'success' || !hasMore || isLoadingMore || loadMoreError) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          onLoadMore();
+        }
+      },
+      {
+        root: null,
+        rootMargin: '0px 0px 160px 0px',
+        threshold: 0,
+      },
+    );
+
+    observer.observe(sentinel);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [loadState, hasMore, isLoadingMore, loadMoreError, onLoadMore]);
+
+  const isEmpty = tasks.length === 0 && loadState === 'success';
 
   return (
     <section
@@ -62,7 +101,7 @@ export function TaskBoardMobileScreen({
         </Button>
       </div>
 
-      {isLoading && (
+      {loadState === 'loading' && (
         <div
           role="status"
           aria-label="Loading tasks"
@@ -73,24 +112,24 @@ export function TaskBoardMobileScreen({
         </div>
       )}
 
-      {failedStatuses.length > 0 && (
-        <div role="alert" className="bg-surface mt-5 flex flex-wrap gap-3 rounded-md p-4">
-          <p className="text-error w-full text-xs">Failed to load some task statuses.</p>
+      {loadState === 'error' && (
+        <div
+          role="alert"
+          className="bg-surface mt-7 flex flex-col items-center gap-3 rounded-md p-5 text-center"
+        >
+          <p className="text-error text-sm">Failed to load tasks.</p>
 
-          {failedStatuses.map(({ value, label }) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => onRetryStatus(value)}
-              className="text-primary text-xs font-semibold underline"
-            >
-              Retry {label}
-            </button>
-          ))}
+          <button
+            type="button"
+            onClick={onRetry}
+            className="text-primary text-sm font-semibold underline"
+          >
+            Try Again
+          </button>
         </div>
       )}
 
-      {isEmpty && !isLoading && failedStatuses.length === 0 && (
+      {isEmpty && (
         <div className="bg-surface-low/30 border-outline/30 mt-7 flex min-h-[320px] flex-1 flex-col items-center justify-center gap-3 rounded-md border border-dashed text-center">
           <NoTasksIcon aria-hidden="true" />
 
@@ -99,7 +138,8 @@ export function TaskBoardMobileScreen({
           </p>
         </div>
       )}
-      {!isEmpty && (
+
+      {tasks.length > 0 && (
         <div aria-label="Tasks" className="mt-7 flex min-w-0 flex-col gap-3">
           {tasks.map((task) => (
             <TaskBoardCard
@@ -112,6 +152,34 @@ export function TaskBoardMobileScreen({
               }
             />
           ))}
+
+          {hasMore && !loadMoreError && (
+            <div ref={sentinelRef} aria-hidden="true" className="h-1 shrink-0" />
+          )}
+
+          {isLoadingMore && (
+            <div
+              role="status"
+              aria-label="Loading more tasks"
+              className="text-foreground-secondary py-4 text-center text-xs"
+            >
+              Loading more tasks...
+            </div>
+          )}
+
+          {loadMoreError && (
+            <div role="alert" className="flex flex-col items-center gap-2 py-4 text-center">
+              <p className="text-error text-xs">Failed to load more tasks.</p>
+
+              <button
+                type="button"
+                onClick={onRetryLoadMore}
+                className="text-primary text-sm font-semibold underline"
+              >
+                Try Again
+              </button>
+            </div>
+          )}
         </div>
       )}
     </section>
