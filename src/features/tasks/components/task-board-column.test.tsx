@@ -1,4 +1,4 @@
-import { createElement } from 'react';
+import { createElement, type ComponentProps } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -7,10 +7,22 @@ import type { CreatedTask } from '../schemas/created-task-schema';
 import { TaskBoardColumn } from './task-board-column';
 import { TaskBoardMobileScreen } from './task-board-mobile-screen';
 
-vi.mock('@/assets/icons/tasks/add-task.svg', () => ({ default: () => null }));
-vi.mock('@/assets/icons/tasks/no-tasks.svg', () => ({ default: () => null }));
-vi.mock('@/assets/icons/tasks/mobile-search.svg', () => ({ default: () => null }));
-vi.mock('@/assets/icons/tasks/mobile-add-task.svg', () => ({ default: () => null }));
+vi.mock('@/assets/icons/tasks/add-task.svg', () => ({
+  default: () => null,
+}));
+
+vi.mock('@/assets/icons/tasks/no-tasks.svg', () => ({
+  default: () => null,
+}));
+
+vi.mock('@/assets/icons/tasks/mobile-search.svg', () => ({
+  default: () => null,
+}));
+
+vi.mock('@/assets/icons/tasks/mobile-add-task.svg', () => ({
+  default: () => null,
+}));
+
 vi.mock('./task-board-card', () => ({
   TaskBoardCard: ({ task }: { task: CreatedTask }) => createElement('article', null, task.title),
 }));
@@ -27,25 +39,47 @@ const task: CreatedTask = {
   status: 'TO_DO',
 };
 
+type DesktopColumnProps = ComponentProps<typeof TaskBoardColumn>;
+
+function renderDesktopColumn(overrides: Partial<DesktopColumnProps> = {}): string {
+  const props: DesktopColumnProps = {
+    status: TASK_STATUSES[0],
+    tasks: [],
+    totalCount: 0,
+    loadState: 'success',
+    hasMore: false,
+    isLoadingMore: false,
+    loadMoreError: false,
+    onAddTask: vi.fn(),
+    onRetry: vi.fn(),
+    onLoadMore: vi.fn(),
+    onRetryLoadMore: vi.fn(),
+    onTaskClick: vi.fn(),
+    assigneeNamesById: new Map<string, string>(),
+    ...overrides,
+  };
+
+  return renderToStaticMarkup(createElement(TaskBoardColumn, props));
+}
+
 describe.each(['loading', 'error', 'success'] as const)('%s task column', (loadState) => {
   it.each([false, true])('preserves feedback and cards when tasks exist: %s', (hasTasks) => {
-    const html = renderToStaticMarkup(
-      createElement(TaskBoardColumn, {
-        status: TASK_STATUSES[0],
-        tasks: hasTasks ? [task] : [],
-        loadState,
-        onAddTask: vi.fn(),
-        onRetry: vi.fn(),
-        assigneeNamesById: new Map(),
-        onTaskClick: vi.fn(),
-      }),
-    );
+    const html = renderDesktopColumn({
+      tasks: hasTasks ? [task] : [],
+      totalCount: hasTasks ? 1 : 0,
+      loadState,
+    });
 
     expect(html.includes(task.title)).toBe(hasTasks);
+
     expect(html.includes('Loading TO DO tasks')).toBe(loadState === 'loading');
+
     expect(html.includes('Failed to load tasks')).toBe(loadState === 'error');
+
     expect(html.includes('>Retry</button>')).toBe(loadState === 'error');
+
     expect(html.includes('No Tasks')).toBe(loadState === 'success' && !hasTasks);
+
     expect(html).toContain(
       hasTasks
         ? 'aria-label="1 tasks"'
@@ -53,7 +87,9 @@ describe.each(['loading', 'error', 'success'] as const)('%s task column', (loadS
           ? 'aria-label="0 tasks"'
           : `aria-label="TO DO tasks ${loadState}"`,
     );
+
     expect(html).toContain('lg:w-72 lg:shrink-0');
+
     if (hasTasks) {
       expect(html).toContain('overflow-y-auto');
     }
@@ -67,15 +103,69 @@ describe.each(['loading', 'error', 'success'] as const)('%s task column', (loadS
         failedStatuses: loadState === 'error' ? [TASK_STATUSES[0]] : [],
         onAddTask: vi.fn(),
         onRetryStatus: vi.fn(),
-        assigneeNamesById: new Map(),
+        assigneeNamesById: new Map<string, string>(),
         onTaskClick: vi.fn(),
       }),
     );
 
     expect(html.includes(task.title)).toBe(hasTasks);
+
     expect(html.includes('Loading tasks')).toBe(loadState === 'loading');
+
     expect(html.includes('Retry TO DO')).toBe(loadState === 'error');
+
     expect(html.includes('No Tasks')).toBe(loadState === 'success' && !hasTasks);
+
     expect(html).toContain('lg:hidden');
+  });
+});
+
+describe('desktop pagination feedback', () => {
+  it('displays total backend count, not just loaded tasks', () => {
+    const html = renderDesktopColumn({
+      tasks: [task],
+      totalCount: 17,
+      hasMore: true,
+    });
+
+    expect(html).toContain('aria-label="17 tasks"');
+    expect(html).toContain(task.title);
+    expect(html).toContain('overflow-y-auto');
+  });
+
+  it('preserves cards while loading the next page', () => {
+    const html = renderDesktopColumn({
+      tasks: [task],
+      totalCount: 17,
+      hasMore: true,
+      isLoadingMore: true,
+    });
+
+    expect(html).toContain(task.title);
+    expect(html).toContain('Loading more tasks...');
+  });
+
+  it('preserves cards and shows retry when load more fails', () => {
+    const html = renderDesktopColumn({
+      tasks: [task],
+      totalCount: 17,
+      hasMore: true,
+      loadMoreError: true,
+    });
+
+    expect(html).toContain(task.title);
+    expect(html).toContain('Failed to load more tasks.');
+    expect(html).toContain('Try Again');
+  });
+
+  it('shows an empty column when no tasks exist', () => {
+    const html = renderDesktopColumn({
+      tasks: [],
+      totalCount: 0,
+      hasMore: false,
+    });
+
+    expect(html).toContain('No Tasks');
+    expect(html).toContain('aria-label="0 tasks"');
   });
 });
