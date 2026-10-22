@@ -1,21 +1,47 @@
 'use client';
 
+import { useCallback, useState } from 'react';
 import Link from 'next/link';
+
+import InviteMemberIcon from '@/assets/icons/projects/invite-member.svg';
 import { Button } from '@/components/ui/button';
+
+import { InviteMemberDialog } from '@/features/invitations/components/invite-member-dialog';
+
 import { useCurrentProject } from '../context/current-project-context';
 import { useProjectMembers } from '../hooks/use-project-members';
 import { ProjectMembersList } from './project-members-list';
-import InviteMemberIcon from '@/assets/icons/projects/invite-member.svg';
 import { ProjectMembersLoadingState } from './project-members-loading-state';
 import { ProjectMembersErrorState } from './project-members-error-state';
 
 type ProjectMembersScreenProps = {
   projectId: string;
+  currentUserId: string | null;
 };
 
-export function ProjectMembersScreen({ projectId }: ProjectMembersScreenProps) {
+export function ProjectMembersScreen({ projectId, currentUserId }: ProjectMembersScreenProps) {
   const { project, status: projectStatus } = useCurrentProject();
+
   const { members, status, retry } = useProjectMembers(projectId);
+
+  const [isInviteOpen, setIsInviteOpen] = useState(false);
+
+  const handleOpenInvite = useCallback(() => {
+    setIsInviteOpen(true);
+  }, []);
+
+  const handleCloseInvite = useCallback(() => {
+    setIsInviteOpen(false);
+  }, []);
+
+  const currentMember = members.find((member) => member.userId === currentUserId);
+
+  const canInvite =
+    status === 'success' &&
+    currentUserId !== null &&
+    (currentMember?.role === 'owner' ||
+      currentMember?.role === 'admin' ||
+      currentMember?.role === 'member');
 
   if (status === 'loading' || projectStatus === 'loading') {
     return (
@@ -28,6 +54,7 @@ export function ProjectMembersScreen({ projectId }: ProjectMembersScreenProps) {
   if (status === 'error') {
     return <ProjectMembersErrorState onRetry={retry} />;
   }
+
   return (
     <div className="w-full px-4 py-8 lg:px-8">
       <header>
@@ -59,9 +86,15 @@ export function ProjectMembersScreen({ projectId }: ProjectMembersScreenProps) {
             </h1>
           </div>
 
-          <Button type="button" className="h-10 px-6 py-2 text-sm leading-5 font-bold">
-            Invite Member
-          </Button>
+          {canInvite && (
+            <Button
+              type="button"
+              onClick={handleOpenInvite}
+              className="h-10 cursor-pointer px-6 py-2 text-sm leading-5 font-bold"
+            >
+              Invite Member
+            </Button>
+          )}
         </div>
 
         <h1 className="text-foreground text-center text-[32px] leading-10 font-semibold tracking-[-0.9px] lg:hidden">
@@ -70,21 +103,29 @@ export function ProjectMembersScreen({ projectId }: ProjectMembersScreenProps) {
       </header>
 
       <div className="mt-8">
-        {status === 'success' && members.length > 0 && (
-          <>
-            <ProjectMembersList members={members} />
-            <div className="mt-8 flex justify-end lg:hidden">
-              <button
-                type="button"
-                aria-label="Invite member"
-                className="flex size-10 items-center justify-center rounded-[10px] bg-[linear-gradient(135deg,var(--color-primary)_0%,var(--color-primary-container)_100%)] shadow-[0_10px_15px_-3px_rgba(0,61,155,0.2),0_4px_6px_-4px_rgba(0,61,155,0.2)]"
-              >
-                <InviteMemberIcon aria-hidden="true" />
-              </button>
-            </div>
-          </>
+        {status === 'success' && members.length > 0 && <ProjectMembersList members={members} />}
+
+        {canInvite && (
+          <div className="mt-8 flex justify-end lg:hidden">
+            <button
+              type="button"
+              onClick={handleOpenInvite}
+              aria-label="Invite member"
+              className="flex size-10 cursor-pointer items-center justify-center rounded-[10px] bg-[linear-gradient(135deg,var(--color-primary)_0%,var(--color-primary-container)_100%)] shadow-[0_10px_15px_-3px_rgba(0,61,155,0.2),0_4px_6px_-4px_rgba(0,61,155,0.2)]"
+            >
+              <InviteMemberIcon aria-hidden="true" />
+            </button>
+          </div>
         )}
       </div>
+
+      {isInviteOpen && canInvite && (
+        <InviteMemberDialog
+          projectId={projectId}
+          projectName={project?.name ?? 'project'}
+          onClose={handleCloseInvite}
+        />
+      )}
     </div>
   );
 }
