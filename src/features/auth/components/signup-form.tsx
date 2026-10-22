@@ -15,6 +15,7 @@ import { signupSchema, type SignupFormValues } from '@/features/auth/schemas/sig
 import { getPasswordChecks } from '../validation/password-rules';
 import { useRouter } from 'next/navigation';
 import { SignupErrorResponse } from '../types/signup-api';
+import { getAuthPageHref } from '../utils/invitation-return-path';
 
 const inputClassName =
   'h-14 rounded-md px-md py-[18px] text-[15px] text-foreground placeholder:text-foreground-subtle sm:h-12 sm:rounded-sm sm:py-[14px]';
@@ -33,11 +34,18 @@ function isSignupErrorResponse(value: unknown): value is SignupErrorResponse {
   );
 }
 
-export function SignupForm() {
+type SignupFormProps = {
+  returnPath: string | null;
+};
+
+export function SignupForm({ returnPath }: SignupFormProps) {
   const router = useRouter();
+
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const loginHref = getAuthPageHref('/login', returnPath);
 
   const onSubmit = async (values: SignupFormValues) => {
     setSubmitError(null);
@@ -52,6 +60,7 @@ export function SignupForm() {
       });
 
       const data: unknown = await response.json().catch(() => null);
+
       if (!response.ok) {
         setSubmitError(
           isSignupErrorResponse(data) ? data.message : 'Something went wrong. Please try again.',
@@ -59,7 +68,8 @@ export function SignupForm() {
         return;
       }
 
-      router.replace('/login');
+      // Continue login without losing the invitation.
+      router.replace(loginHref);
     } catch {
       setSubmitError('Unable to connect. Please try again.');
     }
@@ -310,8 +320,8 @@ export function SignupForm() {
 
       <div className="mt-md pb-xl sm:pt-xl pt-[47.5px] sm:pb-0">
         <p className="text-foreground-secondary sm:text-foreground-muted text-center text-[14px] leading-[20px]">
-          Already have an account?{' '}
-          <Link href="/login" className="text-primary font-semibold">
+          Already have an account?
+          <Link href={loginHref} className="text-primary font-semibold">
             Log in
           </Link>
         </p>
