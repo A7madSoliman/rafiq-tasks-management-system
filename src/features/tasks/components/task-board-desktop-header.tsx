@@ -6,7 +6,15 @@ import BreadcrumbChevronIcon from '@/assets/icons/tasks/breadcrumb-chevron.svg';
 import SearchIcon from '@/assets/icons/tasks/search.svg';
 import { useCurrentProject } from '@/features/projects/context/current-project-context';
 
-export function TaskBoardDesktopHeader() {
+type TaskBoardDesktopHeaderProps = {
+  searchValue: string;
+  onSearchChange: (value: string) => void;
+};
+
+export function TaskBoardDesktopHeader({
+  searchValue,
+  onSearchChange,
+}: TaskBoardDesktopHeaderProps) {
   const { project } = useCurrentProject();
 
   return (
@@ -44,9 +52,11 @@ export function TaskBoardDesktopHeader() {
 
           <input
             type="search"
-            readOnly
+            value={searchValue}
+            onChange={(event) => onSearchChange(event.target.value)}
             aria-label="Search tasks"
             placeholder="Search tasks..."
+            autoComplete="off"
             className="text-foreground placeholder:text-placeholder min-w-0 flex-1 bg-transparent text-sm outline-none"
           />
         </label>

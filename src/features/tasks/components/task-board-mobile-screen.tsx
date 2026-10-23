@@ -5,7 +5,9 @@ import { useEffect, useRef } from 'react';
 import MobileSearchIcon from '@/assets/icons/tasks/mobile-search.svg';
 import MobileAddTaskIcon from '@/assets/icons/tasks/mobile-add-task.svg';
 import NoTasksIcon from '@/assets/icons/tasks/no-tasks.svg';
+
 import { Button } from '@/components/ui/button';
+
 import type { CreatedTask } from '../schemas/created-task-schema';
 import { TaskBoardCard } from './task-board-card';
 
@@ -14,6 +16,9 @@ type TaskBoardMobileScreenProps = {
   assigneeNamesById: ReadonlyMap<string, string>;
   onAddTask: () => void;
   onTaskClick: (taskId: string) => void;
+
+  searchValue: string;
+  onSearchChange: (value: string) => void;
 
   loadState: 'loading' | 'success' | 'error';
   onRetry: () => void;
@@ -30,6 +35,8 @@ export function TaskBoardMobileScreen({
   assigneeNamesById,
   onAddTask,
   onTaskClick,
+  searchValue,
+  onSearchChange,
   loadState,
   onRetry,
   hasMore,
@@ -69,6 +76,8 @@ export function TaskBoardMobileScreen({
 
   const isEmpty = tasks.length === 0 && loadState === 'success';
 
+  const hasActiveSearch = searchValue.trim().length > 0;
+
   return (
     <section
       aria-label="Mobile tasks board"
@@ -84,9 +93,11 @@ export function TaskBoardMobileScreen({
 
           <input
             type="search"
-            readOnly
+            value={searchValue}
+            onChange={(event) => onSearchChange(event.target.value)}
             aria-label="Search tasks"
             placeholder="Search tasks..."
+            autoComplete="off"
             className="text-foreground placeholder:text-foreground-secondary/50 min-w-0 flex-1 bg-transparent text-base outline-none"
           />
         </label>
@@ -134,7 +145,7 @@ export function TaskBoardMobileScreen({
           <NoTasksIcon aria-hidden="true" />
 
           <p className="text-task-status-todo text-[11px] leading-[16.5px] font-bold tracking-[1.1px] uppercase">
-            No Tasks
+            {hasActiveSearch ? 'No Matching Tasks' : 'No Tasks'}
           </p>
         </div>
       )}

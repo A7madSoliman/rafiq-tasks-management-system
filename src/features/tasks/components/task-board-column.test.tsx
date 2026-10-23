@@ -40,6 +40,7 @@ const task: CreatedTask = {
 };
 
 type DesktopColumnProps = ComponentProps<typeof TaskBoardColumn>;
+type MobileProps = ComponentProps<typeof TaskBoardMobileScreen>;
 
 function renderDesktopColumn(overrides: Partial<DesktopColumnProps> = {}): string {
   const props: DesktopColumnProps = {
@@ -60,6 +61,36 @@ function renderDesktopColumn(overrides: Partial<DesktopColumnProps> = {}): strin
   };
 
   return renderToStaticMarkup(createElement(TaskBoardColumn, props));
+}
+
+/**
+ * Shared mobile test renderer.
+ *
+ * Keep all required component props here so existing
+ * pagination tests remain valid when the UI evolves.
+ */
+function renderMobile(overrides: Partial<MobileProps> = {}): string {
+  const props: MobileProps = {
+    tasks: [],
+    loadState: 'success',
+    hasMore: false,
+    isLoadingMore: false,
+    loadMoreError: false,
+    onAddTask: vi.fn(),
+    onRetry: vi.fn(),
+    onLoadMore: vi.fn(),
+    onRetryLoadMore: vi.fn(),
+    onTaskClick: vi.fn(),
+    assigneeNamesById: new Map<string, string>(),
+
+    // Required controlled search input props.
+    searchValue: '',
+    onSearchChange: vi.fn(),
+
+    ...overrides,
+  };
+
+  return renderToStaticMarkup(createElement(TaskBoardMobileScreen, props));
 }
 
 describe.each(['loading', 'error', 'success'] as const)('%s task column', (loadState) => {
@@ -96,21 +127,10 @@ describe.each(['loading', 'error', 'success'] as const)('%s task column', (loadS
   });
 
   it.each([false, true])('preserves mobile feedback and cards when tasks exist: %s', (hasTasks) => {
-    const html = renderToStaticMarkup(
-      createElement(TaskBoardMobileScreen, {
-        tasks: hasTasks ? [task] : [],
-        loadState,
-        hasMore: false,
-        isLoadingMore: false,
-        loadMoreError: false,
-        onAddTask: vi.fn(),
-        onRetry: vi.fn(),
-        onLoadMore: vi.fn(),
-        onRetryLoadMore: vi.fn(),
-        assigneeNamesById: new Map<string, string>(),
-        onTaskClick: vi.fn(),
-      }),
-    );
+    const html = renderMobile({
+      tasks: hasTasks ? [task] : [],
+      loadState,
+    });
 
     expect(html.includes(task.title)).toBe(hasTasks);
 
@@ -172,67 +192,71 @@ describe('desktop pagination feedback', () => {
     expect(html).toContain('No Tasks');
     expect(html).toContain('aria-label="0 tasks"');
   });
+});
 
-  describe('mobile pagination feedback', () => {
-    type MobileProps = ComponentProps<typeof TaskBoardMobileScreen>;
-
-    function renderMobile(overrides: Partial<MobileProps> = {}): string {
-      const props: MobileProps = {
-        tasks: [task],
-        loadState: 'success',
-        hasMore: true,
-        isLoadingMore: false,
-        loadMoreError: false,
-        onAddTask: vi.fn(),
-        onRetry: vi.fn(),
-        onLoadMore: vi.fn(),
-        onRetryLoadMore: vi.fn(),
-        assigneeNamesById: new Map<string, string>(),
-        onTaskClick: vi.fn(),
-        ...overrides,
-      };
-
-      return renderToStaticMarkup(createElement(TaskBoardMobileScreen, props));
-    }
-
-    it('keeps loaded tasks visible while loading more', () => {
-      const html = renderMobile({
-        isLoadingMore: true,
-      });
-
-      expect(html).toContain(task.title);
-      expect(html).toContain('Loading more tasks...');
+describe('mobile pagination feedback', () => {
+  it('keeps loaded tasks visible while loading more', () => {
+    const html = renderMobile({
+      tasks: [task],
+      hasMore: true,
+      isLoadingMore: true,
     });
 
-    it('shows retry without removing loaded tasks', () => {
-      const html = renderMobile({
-        loadMoreError: true,
-      });
+    expect(html).toContain(task.title);
+    expect(html).toContain('Loading more tasks...');
+  });
 
-      expect(html).toContain(task.title);
-      expect(html).toContain('Failed to load more tasks.');
-      expect(html).toContain('Try Again');
+  it('shows retry without removing loaded tasks', () => {
+    const html = renderMobile({
+      tasks: [task],
+      hasMore: true,
+      loadMoreError: true,
     });
 
-    it('renders the empty state correctly', () => {
-      const html = renderMobile({
-        tasks: [],
-        hasMore: false,
-      });
+    expect(html).toContain(task.title);
+    expect(html).toContain('Failed to load more tasks.');
+    expect(html).toContain('Try Again');
+  });
 
-      expect(html).toContain('No Tasks');
+  it('renders the empty state correctly', () => {
+    const html = renderMobile({
+      tasks: [],
+      hasMore: false,
     });
 
-    it('shows an initial loading error', () => {
-      const html = renderMobile({
-        tasks: [],
-        loadState: 'error',
-        hasMore: false,
-      });
+    expect(html).toContain('No Tasks');
+  });
 
-      expect(html).toContain('Failed to load tasks.');
-      expect(html).toContain('Try Again');
-      expect(html).not.toContain('No Tasks');
+  it('shows an initial loading error', () => {
+    const html = renderMobile({
+      tasks: [],
+      loadState: 'error',
     });
+
+    expect(html).toContain('Failed to load tasks.');
+    expect(html).toContain('Try Again');
+    expect(html).not.toContain('No Tasks');
+  });
+});
+
+describe('mobile task search UI', () => {
+  it('renders the controlled search input', () => {
+    const html = renderMobile({
+      searchValue: 'login',
+    });
+
+    expect(html).toContain('aria-label="Search tasks"');
+    expect(html).toContain('placeholder="Search tasks..."');
+    expect(html).toContain('value="login"');
+  });
+
+  it('shows a search-specific empty state', () => {
+    const html = renderMobile({
+      tasks: [],
+      searchValue: 'nonexistent task',
+    });
+
+    expect(html).toContain('No Matching Tasks');
+    expect(html).not.toContain('No Tasks');
   });
 });
