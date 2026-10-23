@@ -8,6 +8,7 @@ import { verifyAccessToken } from '@/lib/auth/session';
 import { TASK_STATUSES } from '@/features/tasks/constants/task-statuses';
 import { mapProjectTasks } from '@/features/tasks/utils/map-project-tasks';
 import { parseContentRangeTotal } from '@/features/projects/utils/parse-content-range';
+import { buildTaskTitleFilter } from '@/features/tasks/utils/build-task-title-filter';
 
 type TasksRouteContext = {
   params: Promise<{
@@ -290,17 +291,20 @@ export async function POST(request: Request, { params }: TasksRouteContext) {
 export async function GET(request: Request, { params }: TasksRouteContext) {
   const { projectId } = await params;
 
-  // 1. Validate the project ID.
+  // Validate the selected project.
   if (!z.uuid().safeParse(projectId).success) {
     return NextResponse.json({ message: 'Invalid project ID.' }, { status: 400 });
   }
 
-  // 2. Read and validate pagination parameters.
   const { searchParams } = new URL(request.url);
 
   const limitParam = searchParams.get('limit');
   const offsetParam = searchParams.get('offset');
   const status = searchParams.get('status');
+
+  // The client uses "search"; Supabase expects "title".
+  const search = searchParams.get('search') ?? '';
+  const titleFilter = buildTaskTitleFilter(search);
 
   const limit = limitParam === null ? 100 : Number(limitParam);
   const offset = offsetParam === null ? 0 : Number(offsetParam);
@@ -319,7 +323,6 @@ export async function GET(request: Request, { params }: TasksRouteContext) {
     return NextResponse.json({ message: 'Invalid task status.' }, { status: 400 });
   }
 
-  // 3. Read the authenticated user's access token.
   const cookieStore = await cookies();
   const accessToken = cookieStore.get('access_token')?.value;
 
@@ -347,7 +350,7 @@ export async function GET(request: Request, { params }: TasksRouteContext) {
       'Content-Type': 'application/json',
     };
 
-    // 4. Verify that the requested project exists.
+    // Verify that the project exists.
     const projectUrl = new URL('/rest/v1/projects', supabaseUrl);
 
     projectUrl.searchParams.set('id', `eq.${projectId}`);
@@ -380,7 +383,7 @@ export async function GET(request: Request, { params }: TasksRouteContext) {
       return NextResponse.json({ message: 'Invalid project response.' }, { status: 502 });
     }
 
-    // 5. Verify that the user belongs to this project.
+    // Verify project membership.
     const membersUrl = new URL('/rest/v1/get_project_members', supabaseUrl);
 
     membersUrl.searchParams.set('project_id', `eq.${projectId}`);
@@ -416,7 +419,7 @@ export async function GET(request: Request, { params }: TasksRouteContext) {
       );
     }
 
-    // 6. Fetch only the requested page from Supabase.
+    // Supabase performs filtering BEFORE pagination.
     const tasksUrl = new URL('/rest/v1/project_tasks', supabaseUrl);
 
     tasksUrl.searchParams.set('project_id', `eq.${projectId}`);
@@ -428,6 +431,10 @@ export async function GET(request: Request, { params }: TasksRouteContext) {
       tasksUrl.searchParams.set('status', `eq.${status}`);
     }
 
+    if (titleFilter !== null) {
+      tasksUrl.searchParams.set('title', titleFilter);
+    }
+
     const tasksResponse = await fetch(tasksUrl, {
       method: 'GET',
       headers: {
@@ -437,7 +444,7 @@ export async function GET(request: Request, { params }: TasksRouteContext) {
       cache: 'no-store',
     });
 
-    // 7. Read pagination metadata from the backend.
+    // The count belongs to the filtered Supabase query.
     const contentRange = tasksResponse.headers.get('content-range');
     const totalCount = parseContentRangeTotal(contentRange);
 
@@ -449,7 +456,7 @@ export async function GET(request: Request, { params }: TasksRouteContext) {
       responseHeaders.set('Content-Range', contentRange);
     }
 
-    // 8. Handle an offset beyond the available records.
+    // Preserve the existing pagination behavior.
     if (tasksResponse.status === 416) {
       if (totalCount === null) {
         return NextResponse.json({ message: 'Invalid pagination metadata.' }, { status: 502 });
@@ -470,12 +477,10 @@ export async function GET(request: Request, { params }: TasksRouteContext) {
       return NextResponse.json({ message: 'Unable to load project tasks.' }, { status: 502 });
     }
 
-    // The exact total count is required for pagination.
     if (totalCount === null) {
       return NextResponse.json({ message: 'Invalid pagination metadata.' }, { status: 502 });
     }
 
-    // 9. Validate and normalize the returned tasks.
     const tasksData: unknown = await tasksResponse.json().catch(() => null);
 
     const tasks = mapProjectTasks(tasksData);
@@ -490,7 +495,6 @@ export async function GET(request: Request, { params }: TasksRouteContext) {
       return NextResponse.json({ message: 'Invalid project tasks response.' }, { status: 502 });
     }
 
-    // 10. Return the tasks and pagination metadata.
     return NextResponse.json(tasks, {
       status: tasksResponse.status,
       headers: responseHeaders,

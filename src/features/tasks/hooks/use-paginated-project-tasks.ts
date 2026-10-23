@@ -2,10 +2,17 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+
 import { parseContentRangeTotal } from '@/features/projects/utils/parse-content-range';
+
 import type { TaskStatus } from '../constants/task-statuses';
 import { createdTaskSchema, type CreatedTask } from '../schemas/created-task-schema';
 import { mergeTaskPage } from '../utils/merge-task-page';
+import {
+  buildTaskPageParams,
+  createTaskQueryKey,
+  normalizeTaskSearchTerm,
+} from '../utils/project-task-search-query';
 
 type LoadStatus = 'loading' | 'success' | 'error';
 type RequestMode = 'initial' | 'more';
@@ -38,10 +45,13 @@ export function usePaginatedProjectTasks(
   projectId: string,
   statusFilter: TaskStatus | null = null,
   enabled = true,
+  searchTerm = '',
 ) {
   const router = useRouter();
 
-  const queryKey = `${projectId}:${statusFilter ?? 'ALL'}`;
+  const normalizedSearchTerm = normalizeTaskSearchTerm(searchTerm);
+
+  const queryKey = createTaskQueryKey(projectId, statusFilter, normalizedSearchTerm);
 
   const [state, setState] = useState<PaginationState>(() => createInitialState(queryKey));
 
@@ -50,7 +60,10 @@ export function usePaginatedProjectTasks(
   const lastRequestedMoreOffsetRef = useRef<number | null>(null);
   const generationRef = useRef(0);
 
-  // Fetch exactly one page.
+  /**
+   * Fetch exactly one page for the current
+   * project + status + search combination.
+   */
   const fetchPage = useCallback(
     async (offset: number, mode: RequestMode, controller: AbortController, generation: number) => {
       const isActive = () => !controller.signal.aborted && generationRef.current === generation;
@@ -59,14 +72,12 @@ export function usePaginatedProjectTasks(
         current.queryKey === queryKey && generationRef.current === generation;
 
       try {
-        const params = new URLSearchParams({
-          limit: String(PAGE_SIZE),
-          offset: String(offset),
+        const params = buildTaskPageParams({
+          limit: PAGE_SIZE,
+          offset,
+          statusFilter,
+          searchTerm: normalizedSearchTerm,
         });
-
-        if (statusFilter !== null) {
-          params.set('status', statusFilter);
-        }
 
         const response = await fetch(
           `/api/projects/${encodeURIComponent(projectId)}/tasks?${params.toString()}`,
@@ -89,8 +100,10 @@ export function usePaginatedProjectTasks(
 
         const totalCount = parseContentRangeTotal(response.headers.get('content-range'));
 
-        // Supabase can return 416 when records have been deleted
-        // or the requested offset is beyond the available rows.
+        /**
+         * Supabase may return 416 when data changes
+         * while loading additional pages.
+         */
         if (response.status === 416) {
           if (mode !== 'more' || totalCount === null) {
             throw new Error('Invalid pagination range.');
@@ -139,7 +152,10 @@ export function usePaginatedProjectTasks(
 
         const page = parsed.data;
 
-        // Avoid repeatedly requesting the same incomplete page.
+        /**
+         * A missing page should not trigger
+         * endless requests for the same offset.
+         */
         if (page.length === 0 && offset < totalCount) {
           throw new Error('Incomplete task page.');
         }
@@ -163,7 +179,9 @@ export function usePaginatedProjectTasks(
             };
           }
 
-          // Reject a response for an outdated offset.
+          /**
+           * Reject pages belonging to an outdated offset.
+           */
           if (current.nextOffset !== offset) {
             return current;
           }
@@ -210,15 +228,21 @@ export function usePaginatedProjectTasks(
         }
       }
     },
-    [projectId, queryKey, router, statusFilter],
+    [projectId, queryKey, router, statusFilter, normalizedSearchTerm],
   );
 
-  // Reset and fetch the first page.
+  /**
+   * Reset pagination and load the first page.
+   *
+   * Runs when project, status, search, or
+   * enabled state changes.
+   */
   const startInitialLoad = useCallback(() => {
     generationRef.current += 1;
 
     controllerRef.current?.abort();
     controllerRef.current = null;
+
     loadMoreInFlightRef.current = false;
     lastRequestedMoreOffsetRef.current = null;
 
@@ -235,19 +259,25 @@ export function usePaginatedProjectTasks(
     void fetchPage(0, 'initial', controller, generationRef.current);
   }, [enabled, fetchPage, projectId, queryKey]);
 
-  // Load again when the project, filter, or enabled state changes.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     startInitialLoad();
 
     return () => {
       generationRef.current += 1;
+
       controllerRef.current?.abort();
       controllerRef.current = null;
+
       loadMoreInFlightRef.current = false;
     };
   }, [startInitialLoad]);
 
+  /**
+   * Never expose tasks from a different query.
+   * This also prevents stale results appearing
+   * before the effect starts a new request.
+   */
   const isCurrentQuery = state.queryKey === queryKey;
 
   const currentState = isCurrentQuery ? state : createInitialState(queryKey);
@@ -258,7 +288,11 @@ export function usePaginatedProjectTasks(
     currentState.totalCount !== null &&
     currentState.nextOffset < currentState.totalCount;
 
-  // Load one additional page.
+  /**
+   * Load one additional page.
+   * Duplicate offsets and concurrent requests
+   * are rejected.
+   */
   const requestMore = useCallback(
     (retryFailure: boolean) => {
       if (
@@ -298,6 +332,7 @@ export function usePaginatedProjectTasks(
       });
 
       lastRequestedMoreOffsetRef.current = offset;
+
       void fetchPage(offset, 'more', controller, generationRef.current);
     },
     [enabled, fetchPage, projectId, queryKey, state],

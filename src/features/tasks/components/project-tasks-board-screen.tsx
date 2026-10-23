@@ -1,12 +1,17 @@
 'use client';
 
 import { useCallback, useState } from 'react';
+
 import { useCurrentProject } from '@/features/projects/context/current-project-context';
 import { useProjectMembers } from '@/features/projects/hooks/use-project-members';
+
 import { TASK_STATUSES, type TaskStatus } from '../constants/task-statuses';
+import { useDebouncedValue } from '../hooks/use-debounced-value';
 import { useIsDesktop } from '../hooks/use-is-desktop';
 import { usePaginatedProjectTasks } from '../hooks/use-paginated-project-tasks';
 import type { CreatedTask } from '../schemas/created-task-schema';
+import { filterLocallyCreatedTasks } from '../utils/filter-locally-created-tasks';
+
 import { CreateTaskDialog } from './create-task-dialog';
 import { ProjectTasksBoardLoadingState } from './project-tasks-board-loading-state';
 import { TaskBoardColumn } from './task-board-column';
@@ -27,6 +32,7 @@ type SelectedTask = {
 type DesktopPaginatedColumnProps = {
   projectId: string;
   status: (typeof TASK_STATUSES)[number];
+  searchTerm: string;
   localTasks: readonly CreatedTask[];
   assigneeNamesById: ReadonlyMap<string, string>;
   onAddTask: (status: TaskStatus) => void;
@@ -35,6 +41,9 @@ type DesktopPaginatedColumnProps = {
 
 type MobileTasksContentProps = {
   projectId: string;
+  searchTerm: string;
+  searchValue: string;
+  onSearchChange: (value: string) => void;
   localTasks: readonly CreatedTask[];
   assigneeNamesById: ReadonlyMap<string, string>;
   onAddTask: () => void;
@@ -42,11 +51,14 @@ type MobileTasksContentProps = {
 };
 
 /**
- * Each desktop status column owns its own pagination state.
+ * Desktop:
+ * Every status column keeps its independent pagination.
+ * All columns share the same search term.
  */
 function DesktopPaginatedColumn({
   projectId,
   status,
+  searchTerm,
   localTasks,
   assigneeNamesById,
   onAddTask,
@@ -62,9 +74,8 @@ function DesktopPaginatedColumn({
     loadMore,
     retry,
     retryLoadMore,
-  } = usePaginatedProjectTasks(projectId, status.value);
+  } = usePaginatedProjectTasks(projectId, status.value, true, searchTerm);
 
-  // Avoid displaying newly created tasks twice.
   const loadedTaskIds = new Set(paginatedTasks.map((task) => task.id));
 
   const localColumnTasks = localTasks.filter(
@@ -92,8 +103,15 @@ function DesktopPaginatedColumn({
   );
 }
 
+/**
+ * Mobile:
+ * All project tasks use one paginated list.
+ */
 function MobileTasksContent({
   projectId,
+  searchTerm,
+  searchValue,
+  onSearchChange,
   localTasks,
   assigneeNamesById,
   onAddTask,
@@ -108,7 +126,7 @@ function MobileTasksContent({
     loadMore,
     retry,
     retryLoadMore,
-  } = usePaginatedProjectTasks(projectId);
+  } = usePaginatedProjectTasks(projectId, null, true, searchTerm);
 
   const loadedTaskIds = new Set(paginatedTasks.map((task) => task.id));
 
@@ -123,6 +141,8 @@ function MobileTasksContent({
       assigneeNamesById={assigneeNamesById}
       onAddTask={onAddTask}
       onTaskClick={onTaskClick}
+      searchValue={searchValue}
+      onSearchChange={onSearchChange}
       loadState={loadState}
       hasMore={hasMore}
       isLoadingMore={isLoadingMore}
@@ -143,6 +163,18 @@ export function ProjectTasksBoardScreen() {
   } = useCurrentProject();
 
   const isDesktop = useIsDesktop();
+
+  /**
+   * Search is controlled at the screen level.
+   * Desktop and mobile use the same state.
+   */
+  const [searchInput, setSearchInput] = useState('');
+
+  /**
+   * The API only receives the search after
+   * the user stops typing for 400ms.
+   */
+  const debouncedSearchTerm = useDebouncedValue(searchInput, 400);
 
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
 
@@ -165,8 +197,13 @@ export function ProjectTasksBoardScreen() {
     members.map((member) => [member.userId, member.name]),
   );
 
-  // Keep locally created tasks scoped to their project.
-  const localTasks = localTasksState.projectId === projectId ? localTasksState.tasks : [];
+  /**
+   * Keep locally created tasks scoped to
+   * the selected project AND the current search.
+   */
+  const projectLocalTasks = localTasksState.projectId === projectId ? localTasksState.tasks : [];
+
+  const localTasks = filterLocallyCreatedTasks(projectLocalTasks, debouncedSearchTerm);
 
   const handleOpenCreateTask = useCallback((status: TaskStatus) => {
     setInitialTaskStatus(status);
@@ -219,7 +256,6 @@ export function ProjectTasksBoardScreen() {
     [projectId],
   );
 
-  // Project loading/error states.
   if (projectStatus === 'error') {
     return (
       <div className="flex min-h-[50dvh] flex-col items-center justify-center gap-4 px-6 text-center">
@@ -244,7 +280,7 @@ export function ProjectTasksBoardScreen() {
 
   return (
     <div className="min-w-0">
-      <TaskBoardDesktopHeader />
+      <TaskBoardDesktopHeader searchValue={searchInput} onSearchChange={setSearchInput} />
 
       {membersStatus === 'error' && (
         <div role="alert" className="mx-8 mb-4 flex items-center gap-4">
@@ -274,6 +310,7 @@ export function ProjectTasksBoardScreen() {
                   key={`${projectId}:${status.value}`}
                   projectId={projectId}
                   status={status}
+                  searchTerm={debouncedSearchTerm}
                   localTasks={localTasks}
                   assigneeNamesById={assigneeNamesById}
                   onAddTask={handleOpenCreateTask}
@@ -287,6 +324,9 @@ export function ProjectTasksBoardScreen() {
         <MobileTasksContent
           key={projectId}
           projectId={projectId}
+          searchTerm={debouncedSearchTerm}
+          searchValue={searchInput}
+          onSearchChange={setSearchInput}
           localTasks={localTasks}
           assigneeNamesById={assigneeNamesById}
           onAddTask={() => handleOpenCreateTask('TO_DO')}
