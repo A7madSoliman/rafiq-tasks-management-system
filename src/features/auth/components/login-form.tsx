@@ -2,16 +2,20 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-
+import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import EyeOffIcon from '@/assets/icons/eye-off.svg';
 import EyeOnIcon from '@/assets/icons/eye-on.svg';
 import { Button } from '@/components/ui/button';
 import { FieldLabel } from '@/components/ui/field-label';
 import { Input } from '@/components/ui/input';
-import { useForm } from 'react-hook-form';
-import { LoginFormValues, loginSchema } from '../schemas/login-schema';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useRouter } from 'next/navigation';
+import { loginSchema, type LoginFormValues } from '../schemas/login-schema';
+import { getAuthPageHref } from '../utils/invitation-return-path';
+
+type LoginFormProps = {
+  returnPath: string | null;
+};
 
 const inputClassName =
   'h-14 rounded-md bg-surface-highest px-md py-[18px] text-[16px] text-foreground placeholder:text-foreground-subtle sm:h-12 sm:rounded-xs sm:py-[14px]';
@@ -19,12 +23,30 @@ const inputClassName =
 const labelClassName =
   'pl-2xs text-[11px] leading-[16.5px] font-bold tracking-[0.55px] text-foreground-secondary uppercase sm:pl-0 sm:text-foreground-muted';
 
-export function LoginForm() {
+export function LoginForm({ returnPath }: LoginFormProps) {
   const router = useRouter();
+
   const [showPassword, setShowPassword] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const onSubmit = async (values: LoginFormValues) => {
+  const signupHref = getAuthPageHref('/sign-up', returnPath);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    mode: 'onTouched',
+    reValidateMode: 'onChange',
+    defaultValues: {
+      email: '',
+      password: '',
+      rememberMe: false,
+    },
+  });
+
+  async function onSubmit(values: LoginFormValues) {
     setSubmitError(null);
 
     try {
@@ -51,26 +73,12 @@ export function LoginForm() {
         return;
       }
 
-      router.replace('/project');
+      // An invitation link takes priority over the default dashboard.
+      router.replace(returnPath ?? '/project');
     } catch {
       setSubmitError('Unable to connect. Please try again.');
     }
-  };
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
-    mode: 'onTouched',
-    reValidateMode: 'onChange',
-    defaultValues: {
-      email: '',
-      password: '',
-      rememberMe: false,
-    },
-  });
+  }
 
   return (
     <section
@@ -105,6 +113,7 @@ export function LoginForm() {
               aria-invalid={Boolean(errors.email)}
               {...register('email')}
             />
+
             {errors.email && (
               <p className="text-error text-[11px] leading-[16.5px]">{errors.email.message}</p>
             )}
@@ -177,11 +186,13 @@ export function LoginForm() {
               Forget Password?
             </Link>
           </div>
+
           {submitError && (
             <p role="alert" className="text-error text-[12px] leading-[18px]">
               {submitError}
             </p>
           )}
+
           <Button
             type="submit"
             disabled={isSubmitting}
@@ -195,7 +206,7 @@ export function LoginForm() {
       <footer className="flex h-[235px] items-end justify-center sm:mt-[31px] sm:h-[53px] sm:border-t sm:border-[rgba(195,198,214,0.15)] sm:pt-[33px]">
         <p className="text-foreground-muted text-center text-[14px] leading-5">
           Don&apos;t have an account?{' '}
-          <Link href="/sign-up" className="text-primary font-semibold">
+          <Link href={signupHref} className="text-primary font-semibold">
             Sign Up
           </Link>
         </p>

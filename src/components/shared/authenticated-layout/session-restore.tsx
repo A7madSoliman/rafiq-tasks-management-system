@@ -3,7 +3,11 @@
 import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
-export function SessionRestore() {
+type SessionRestoreProps = {
+  loginHref?: string;
+};
+
+export function SessionRestore({ loginHref = '/login' }: SessionRestoreProps) {
   const router = useRouter();
   const hasStarted = useRef(false);
 
@@ -21,24 +25,26 @@ export function SessionRestore() {
         });
 
         if (!response.ok) {
-          router.replace('/login');
+          router.replace(loginHref);
           router.refresh();
           return;
         }
 
         router.refresh();
       } catch {
-        router.replace('/login');
+        router.replace(loginHref);
         router.refresh();
       }
     }
 
     void restoreSession();
-  }, [router]);
+  }, [router, loginHref]);
 
   return (
     <div className="flex min-h-dvh items-center justify-center">
-      <p className="text-foreground-secondary text-sm">Restoring your session...</p>
+      <p role="status" className="text-foreground-secondary text-sm">
+        Restoring your session...
+      </p>
     </div>
   );
 }
