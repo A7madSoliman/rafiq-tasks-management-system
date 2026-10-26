@@ -19,6 +19,7 @@ import { TaskBoardDesktopHeader } from './task-board-desktop-header';
 import { TaskBoardMobileScreen } from './task-board-mobile-screen';
 import { TaskDetailsDialog } from './task-details-dialog';
 import type { TaskUpdateEvent } from '../types/task-update-event';
+import { TaskBoardDragDrop } from './task-board-drag-drop';
 
 type LocalTasksState = {
   projectId: string;
@@ -69,6 +70,7 @@ function DesktopPaginatedColumn({
   onTaskClick,
 }: DesktopPaginatedColumnProps) {
   const {
+    canEdit,
     tasks: paginatedTasks,
     totalCount,
     status: loadState,
@@ -90,6 +92,7 @@ function DesktopPaginatedColumn({
 
   return (
     <TaskBoardColumn
+      canMove={canEdit === true}
       status={status}
       tasks={visibleTasks}
       totalCount={totalCount}
@@ -123,6 +126,7 @@ function MobileTasksContent({
   onTaskClick,
 }: MobileTasksContentProps) {
   const {
+    canEdit,
     tasks: paginatedTasks,
     status: loadState,
     hasMore,
@@ -142,6 +146,7 @@ function MobileTasksContent({
 
   return (
     <TaskBoardMobileScreen
+      canMove={canEdit === true}
       tasks={visibleTasks}
       assigneeNamesById={assigneeNamesById}
       onAddTask={onAddTask}
@@ -301,77 +306,85 @@ export function ProjectTasksBoardScreen() {
   }
 
   return (
-    <div className="min-w-0">
-      <TaskBoardDesktopHeader searchValue={searchInput} onSearchChange={setSearchInput} />
+    <TaskBoardDragDrop
+      key={projectId}
+      projectId={projectId}
+      mobile={!isDesktop}
+      searchKey={JSON.stringify([searchInput, debouncedSearchTerm])}
+      disabled={isCreateTaskOpen || selectedTaskId !== null}
+    >
+      <div className="min-w-0">
+        <TaskBoardDesktopHeader searchValue={searchInput} onSearchChange={setSearchInput} />
 
-      {membersStatus === 'error' && (
-        <div role="alert" className="mx-8 mb-4 flex items-center gap-4">
-          <p className="text-error text-sm">Unable to load task assignees.</p>
+        {membersStatus === 'error' && (
+          <div role="alert" className="mx-8 mb-4 flex items-center gap-4">
+            <p className="text-error text-sm">Unable to load task assignees.</p>
 
-          <button
-            type="button"
-            onClick={retryMembers}
-            className="text-primary cursor-pointer text-sm font-semibold"
-          >
-            Retry
-          </button>
-        </div>
-      )}
-
-      {isDesktop ? (
-        <section aria-label="Tasks Kanban board" className="min-w-0">
-          <div
-            role="region"
-            aria-label="Task status columns"
-            tabIndex={0}
-            className="w-full overflow-x-auto px-8 pb-8"
-          >
-            <div className="flex h-[calc(100dvh-282px)] min-h-[520px] w-max gap-6 pb-4">
-              {TASK_STATUSES.map((status) => (
-                <DesktopPaginatedColumn
-                  refreshRevision={refreshRevision}
-                  key={`${projectId}:${status.value}`}
-                  projectId={projectId}
-                  status={status}
-                  searchTerm={debouncedSearchTerm}
-                  localTasks={localTasks}
-                  assigneeNamesById={assigneeNamesById}
-                  onAddTask={handleOpenCreateTask}
-                  onTaskClick={handleOpenTask}
-                />
-              ))}
-            </div>
+            <button
+              type="button"
+              onClick={retryMembers}
+              className="text-primary cursor-pointer text-sm font-semibold"
+            >
+              Retry
+            </button>
           </div>
-        </section>
-      ) : (
-        <MobileTasksContent
-          refreshRevision={refreshRevision}
-          key={projectId}
+        )}
+
+        {isDesktop ? (
+          <section aria-label="Tasks Kanban board" className="min-w-0">
+            <div
+              role="region"
+              aria-label="Task status columns"
+              tabIndex={0}
+              className="w-full overflow-x-auto px-8 pb-8"
+            >
+              <div className="flex h-[calc(100dvh-282px)] min-h-[520px] w-max gap-6 pb-4">
+                {TASK_STATUSES.map((status) => (
+                  <DesktopPaginatedColumn
+                    refreshRevision={refreshRevision}
+                    key={`${projectId}:${status.value}`}
+                    projectId={projectId}
+                    status={status}
+                    searchTerm={debouncedSearchTerm}
+                    localTasks={localTasks}
+                    assigneeNamesById={assigneeNamesById}
+                    onAddTask={handleOpenCreateTask}
+                    onTaskClick={handleOpenTask}
+                  />
+                ))}
+              </div>
+            </div>
+          </section>
+        ) : (
+          <MobileTasksContent
+            refreshRevision={refreshRevision}
+            key={projectId}
+            projectId={projectId}
+            searchTerm={debouncedSearchTerm}
+            searchValue={searchInput}
+            onSearchChange={setSearchInput}
+            localTasks={localTasks}
+            assigneeNamesById={assigneeNamesById}
+            onAddTask={() => handleOpenCreateTask('TO_DO')}
+            onTaskClick={handleOpenTask}
+          />
+        )}
+
+        <CreateTaskDialog
           projectId={projectId}
-          searchTerm={debouncedSearchTerm}
-          searchValue={searchInput}
-          onSearchChange={setSearchInput}
-          localTasks={localTasks}
-          assigneeNamesById={assigneeNamesById}
-          onAddTask={() => handleOpenCreateTask('TO_DO')}
-          onTaskClick={handleOpenTask}
+          isOpen={isCreateTaskOpen}
+          onClose={handleCloseCreateTask}
+          onCreated={handleTaskCreated}
+          initialStatus={initialTaskStatus}
         />
-      )}
 
-      <CreateTaskDialog
-        projectId={projectId}
-        isOpen={isCreateTaskOpen}
-        onClose={handleCloseCreateTask}
-        onCreated={handleTaskCreated}
-        initialStatus={initialTaskStatus}
-      />
-
-      <TaskDetailsDialog
-        projectId={projectId}
-        taskId={selectedTaskId}
-        onClose={handleCloseTask}
-        onUpdated={handleTaskUpdated}
-      />
-    </div>
+        <TaskDetailsDialog
+          projectId={projectId}
+          taskId={selectedTaskId}
+          onClose={handleCloseTask}
+          onUpdated={handleTaskUpdated}
+        />
+      </div>
+    </TaskBoardDragDrop>
   );
 }

@@ -3,8 +3,12 @@ import CompletedIcon from '@/assets/icons/validation-passed.svg';
 import { cn } from '@/lib/cn';
 import type { CreatedTask } from '../schemas/created-task-schema';
 import { TASK_STATUSES, type TaskStatus } from '../constants/task-statuses';
+import type { ReactNode, Ref } from 'react';
 
 type TaskBoardCardProps = {
+  moveHandle?: ReactNode;
+  dragRef?: Ref<HTMLElement>;
+  dragging?: boolean;
   task: CreatedTask;
   assigneeName?: string | null;
   mobile?: boolean;
@@ -51,6 +55,9 @@ function formatDueDate(value: string): string {
 }
 
 export function TaskBoardCard({
+  moveHandle,
+  dragRef,
+  dragging = false,
   task,
   assigneeName,
   mobile = false,
@@ -89,13 +96,21 @@ export function TaskBoardCard({
 
     return (
       <article
+        ref={dragRef}
         className={cn(
           'relative flex min-h-[122px] min-w-0 flex-col gap-3 rounded-md border p-4',
           'shadow-[0_2px_4px_rgba(0,0,0,0.02)]',
           isBlocked ? 'border-error/10 bg-error-container/20' : 'border-outline/10 bg-surface',
+          dragging && 'opacity-40',
         )}
       >
-        <div className="flex min-h-5 items-center justify-between gap-2">
+        {moveHandle && <div className="absolute top-2 right-2 z-20">{moveHandle}</div>}
+        <div
+          className={cn(
+            'flex min-h-5 items-center justify-between gap-2',
+            Boolean(moveHandle) && 'min-h-11 pr-12',
+          )}
+        >
           {task.task_id ? (
             <span className="text-task-status-label min-w-0 truncate text-[10px] leading-4 font-medium uppercase">
               {task.task_id}
@@ -171,18 +186,22 @@ export function TaskBoardCard({
   }
   return (
     <article
+      ref={dragRef}
       className={cn(
         'relative flex w-full flex-col rounded-md border p-4',
         'shadow-[0_2px_4px_rgba(0,0,0,0.02)]',
         isDone ? 'min-h-[113px] gap-4' : 'min-h-[113px] gap-2',
         isBlocked ? 'border-error/10 bg-error-container/20' : 'border-outline/10 bg-surface',
+        dragging && 'opacity-40',
       )}
     >
+      {moveHandle && <div className="absolute top-2 right-2 z-20">{moveHandle}</div>}
       <h3
         className={cn(
           'text-foreground line-clamp-2 break-words',
           'text-sm leading-[19.25px] font-medium',
           isDone && 'text-foreground/60 decoration-foreground/50 line-through',
+          Boolean(moveHandle) && 'min-h-11 pr-12',
         )}
       >
         {task.title}

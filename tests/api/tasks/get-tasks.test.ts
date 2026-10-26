@@ -192,11 +192,37 @@ describe('GET /api/projects/[projectId]/tasks', () => {
     const response = await GET(createRequest(), context);
 
     expect(response.status).toBe(200);
+    expect(response.headers.get('X-Taskly-Can-Edit')).toBe('false');
     expect(response.headers.get('content-range')).toBe('0-0/1');
 
     await expect(response.json()).resolves.toEqual([expectedTask]);
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
+
+  it.each([
+    { role: 'owner', userId: USER_ID, expected: true },
+    { role: 'admin', userId: USER_ID, expected: true },
+    { role: 'member', userId: USER_ID, expected: true },
+    { role: null, userId: OWNER_ID, expected: true },
+    { role: 'viewer', userId: OWNER_ID, expected: false },
+  ])(
+    'returns private edit permission for $role (creator: $userId)',
+    async ({ role, userId, expected }) => {
+      authMocks.verifyAccessToken.mockResolvedValue({ id: userId });
+      const fetchMock = mockProjectAccess(role ? [{ ...member, user_id: userId, role }] : []);
+      fetchMock.mockResolvedValueOnce(
+        new Response(JSON.stringify([backendTask]), {
+          headers: { 'Content-Range': '0-0/1' },
+        }),
+      );
+      const response = await GET(createRequest(), context);
+      expect(response.status).toBe(200);
+      expect(response.headers.get('X-Taskly-Can-Edit')).toBe(String(expected));
+      expect(response.headers.get('Cache-Control')).toBe('no-store');
+      expect(response.headers.get('Content-Range')).toBe('0-0/1');
+      expect(await response.json()).toEqual([expectedTask]);
+    },
+  );
 
   it('applies project isolation and server-side pagination', async () => {
     const fetchMock = mockProjectAccess();

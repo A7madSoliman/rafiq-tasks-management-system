@@ -9,9 +9,10 @@ import { cn } from '@/lib/cn';
 import { TASK_STATUSES, type TaskStatus } from '../constants/task-statuses';
 import type { CreatedTask } from '../schemas/created-task-schema';
 
-import { TaskBoardCard } from './task-board-card';
+import { BoardTaskCard, BoardStatusTarget } from './task-board-drag-drop';
 
 type TaskBoardColumnProps = {
+  canMove?: boolean;
   status: (typeof TASK_STATUSES)[number];
   tasks: readonly CreatedTask[];
   totalCount: number;
@@ -74,6 +75,7 @@ const STATUS_STYLES: Record<
 };
 
 export function TaskBoardColumn({
+  canMove = false,
   status,
   tasks,
   totalCount,
@@ -140,139 +142,148 @@ export function TaskBoardColumn({
         : null;
 
   return (
-    <section
-      aria-label={`${status.label} tasks`}
-      className="flex w-full min-w-0 flex-col gap-4 lg:h-full lg:w-72 lg:shrink-0"
-    >
-      <header className="flex h-[19px] shrink-0 items-center px-1">
-        <div className="flex items-center gap-2">
-          <span aria-hidden="true" className={cn('size-2 shrink-0 rounded-full', styles.dot)} />
+    <BoardStatusTarget status={status.value} available={canMove && loadState === 'success'}>
+      {({ ref, highlighted }) => (
+        <section
+          ref={ref}
+          aria-label={`${status.label} tasks`}
+          className={cn(
+            'flex w-full min-w-0 flex-col gap-4 rounded-md lg:h-full lg:w-72 lg:shrink-0',
+            highlighted && 'bg-surface-nested ring-primary ring-2',
+          )}
+        >
+          <header className="flex h-[19px] shrink-0 items-center px-1">
+            <div className="flex items-center gap-2">
+              <span aria-hidden="true" className={cn('size-2 shrink-0 rounded-full', styles.dot)} />
 
-          <h2 className="text-task-status-label text-[11px] leading-[17px] font-bold tracking-[1.1px] whitespace-nowrap">
-            {status.boardLabel}
-          </h2>
+              <h2 className="text-task-status-label text-[11px] leading-[17px] font-bold tracking-[1.1px] whitespace-nowrap">
+                {status.boardLabel}
+              </h2>
 
-          <span
-            aria-label={
-              displayedCount !== null
-                ? `${displayedCount} tasks`
-                : `${status.label} tasks ${loadState}`
-            }
-            className={cn(
-              'rounded-xs px-1.5 py-0.5 text-[10px] leading-[15px] font-bold',
-              styles.count,
-            )}
-          >
-            {displayedCount ?? '—'}
-          </span>
-        </div>
-      </header>
-
-      <div className="flex min-h-0 flex-1 flex-col gap-3">
-        {showAddButton && (
-          <button
-            type="button"
-            onClick={onAddTask}
-            className="border-outline/30 text-foreground-secondary/60 flex h-[52px] w-full shrink-0 items-center justify-center gap-2 rounded-md border-2 border-dashed text-xs leading-4 font-bold tracking-[1.2px] uppercase"
-          >
-            <AddTaskIcon aria-hidden="true" />
-            <span>Add New Task</span>
-          </button>
-        )}
-
-        {/* Initial loading state */}
-        {loadState === 'loading' && (
-          <div
-            role="status"
-            aria-label={`Loading ${status.label} tasks`}
-            className="bg-surface border-outline/10 h-28 animate-pulse rounded-md border p-4"
-          >
-            <div className="bg-surface-icon h-3 w-3/4 rounded-xs" />
-            <div className="bg-surface-icon mt-3 h-3 w-1/2 rounded-xs" />
-          </div>
-        )}
-
-        {/* Initial loading error */}
-        {loadState === 'error' && (
-          <div className="bg-surface-low/30 border-outline/30 flex min-h-[240px] flex-1 flex-col items-center justify-center gap-3 rounded-md border border-dashed p-4 text-center">
-            <p role="alert" className="text-error text-xs">
-              Failed to load tasks
-            </p>
-
-            <button
-              type="button"
-              onClick={onRetry}
-              className="text-primary text-sm font-semibold underline"
-            >
-              Retry
-            </button>
-          </div>
-        )}
-
-        {/* Empty status column */}
-        {loadState === 'success' && tasks.length === 0 && (
-          <div className="bg-surface-low/30 border-outline/30 flex min-h-[240px] flex-1 flex-col items-center justify-center gap-3 rounded-md border border-dashed text-center">
-            <NoTasksIcon aria-hidden="true" />
-
-            <p className="text-task-status-todo text-[11px] leading-[16.5px] font-bold tracking-[1.1px] uppercase">
-              No Tasks
-            </p>
-          </div>
-        )}
-
-        {/* Scrollable task list */}
-        {tasks.length > 0 && (
-          <div
-            ref={scrollContainerRef}
-            aria-label={`${status.label} task list`}
-            className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pb-2"
-          >
-            {tasks.map((task) => (
-              <TaskBoardCard
-                key={task.id}
-                task={task}
-                onTaskClick={onTaskClick}
-                assigneeName={
-                  task.assignee_id ? (assigneeNamesById.get(task.assignee_id) ?? null) : null
+              <span
+                aria-label={
+                  displayedCount !== null
+                    ? `${displayedCount} tasks`
+                    : `${status.label} tasks ${loadState}`
                 }
-              />
-            ))}
+                className={cn(
+                  'rounded-xs px-1.5 py-0.5 text-[10px] leading-[15px] font-bold',
+                  styles.count,
+                )}
+              >
+                {displayedCount ?? '—'}
+              </span>
+            </div>
+          </header>
 
-            {/* Observer target for the next page */}
-            {hasMore && (
-              <div ref={loadMoreSentinelRef} aria-hidden="true" className="h-1 shrink-0" />
+          <div className="flex min-h-0 flex-1 flex-col gap-3">
+            {showAddButton && (
+              <button
+                type="button"
+                onClick={onAddTask}
+                className="border-outline/30 text-foreground-secondary/60 flex h-[52px] w-full shrink-0 items-center justify-center gap-2 rounded-md border-2 border-dashed text-xs leading-4 font-bold tracking-[1.2px] uppercase"
+              >
+                <AddTaskIcon aria-hidden="true" />
+                <span>Add New Task</span>
+              </button>
             )}
 
-            {/* Loading an additional page */}
-            {isLoadingMore && (
+            {/* Initial loading state */}
+            {loadState === 'loading' && (
               <div
                 role="status"
-                aria-label={`Loading more ${status.label} tasks`}
-                className="text-foreground-secondary py-3 text-center text-xs"
+                aria-label={`Loading ${status.label} tasks`}
+                className="bg-surface border-outline/10 h-28 animate-pulse rounded-md border p-4"
               >
-                Loading more tasks...
+                <div className="bg-surface-icon h-3 w-3/4 rounded-xs" />
+                <div className="bg-surface-icon mt-3 h-3 w-1/2 rounded-xs" />
               </div>
             )}
 
-            {/* Error while loading an additional page */}
-            {loadMoreError && (
-              <div className="flex flex-col items-center gap-2 py-3 text-center">
+            {/* Initial loading error */}
+            {loadState === 'error' && (
+              <div className="bg-surface-low/30 border-outline/30 flex min-h-[240px] flex-1 flex-col items-center justify-center gap-3 rounded-md border border-dashed p-4 text-center">
                 <p role="alert" className="text-error text-xs">
-                  Failed to load more tasks.
+                  Failed to load tasks
                 </p>
 
                 <button
                   type="button"
-                  onClick={onRetryLoadMore}
-                  className="text-primary text-xs font-semibold underline"
+                  onClick={onRetry}
+                  className="text-primary text-sm font-semibold underline"
                 >
-                  Try Again
+                  Retry
                 </button>
               </div>
             )}
+
+            {/* Empty status column */}
+            {loadState === 'success' && tasks.length === 0 && (
+              <div className="bg-surface-low/30 border-outline/30 flex min-h-[240px] flex-1 flex-col items-center justify-center gap-3 rounded-md border border-dashed text-center">
+                <NoTasksIcon aria-hidden="true" />
+
+                <p className="text-task-status-todo text-[11px] leading-[16.5px] font-bold tracking-[1.1px] uppercase">
+                  No Tasks
+                </p>
+              </div>
+            )}
+
+            {/* Scrollable task list */}
+            {tasks.length > 0 && (
+              <div
+                ref={scrollContainerRef}
+                aria-label={`${status.label} task list`}
+                className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pb-2"
+              >
+                {tasks.map((task) => (
+                  <BoardTaskCard
+                    canMove={canMove && loadState === 'success'}
+                    key={task.id}
+                    task={task}
+                    onTaskClick={onTaskClick}
+                    assigneeName={
+                      task.assignee_id ? (assigneeNamesById.get(task.assignee_id) ?? null) : null
+                    }
+                  />
+                ))}
+
+                {/* Observer target for the next page */}
+                {hasMore && (
+                  <div ref={loadMoreSentinelRef} aria-hidden="true" className="h-1 shrink-0" />
+                )}
+
+                {/* Loading an additional page */}
+                {isLoadingMore && (
+                  <div
+                    role="status"
+                    aria-label={`Loading more ${status.label} tasks`}
+                    className="text-foreground-secondary py-3 text-center text-xs"
+                  >
+                    Loading more tasks...
+                  </div>
+                )}
+
+                {/* Error while loading an additional page */}
+                {loadMoreError && (
+                  <div className="flex flex-col items-center gap-2 py-3 text-center">
+                    <p role="alert" className="text-error text-xs">
+                      Failed to load more tasks.
+                    </p>
+
+                    <button
+                      type="button"
+                      onClick={onRetryLoadMore}
+                      className="text-primary text-xs font-semibold underline"
+                    >
+                      Try Again
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-        )}
-      </div>
-    </section>
+        </section>
+      )}
+    </BoardStatusTarget>
   );
 }

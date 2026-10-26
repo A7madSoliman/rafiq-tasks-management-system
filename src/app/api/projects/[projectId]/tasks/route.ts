@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { mapProjectMembers } from '@/features/projects/utils/map-project-members';
 import { createTaskSchema } from '@/features/tasks/schemas/create-task-schema';
 import { canCreateTask } from '@/features/tasks/utils/can-create-task';
+import { canEditTask } from '@/features/tasks/utils/can-edit-task';
 import { verifyAccessToken } from '@/lib/auth/session';
 import { TASK_STATUSES } from '@/features/tasks/constants/task-statuses';
 import { mapProjectTasks } from '@/features/tasks/utils/map-project-tasks';
@@ -450,6 +451,13 @@ export async function GET(request: Request, { params }: TasksRouteContext) {
 
     const responseHeaders = new Headers({
       'Cache-Control': 'no-store',
+      'X-Taskly-Can-Edit': String(
+        canEditTask({
+          userId: user.id,
+          projectCreatedBy: project.created_by,
+          memberRole: members.find((member) => member.userId === user.id)?.role ?? null,
+        }),
+      ),
     });
 
     if (totalCount !== null && contentRange !== null) {
