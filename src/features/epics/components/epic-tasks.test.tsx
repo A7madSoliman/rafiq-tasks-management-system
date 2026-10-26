@@ -18,18 +18,23 @@ const task = {
   dueDate: '2026-10-12T00:00:00+00:00',
 };
 const retry = vi.fn();
-function render() {
+function render(refreshRevision?: number) {
   return renderToStaticMarkup(
     createElement(EpicTasks, {
       projectId: 'project',
       epicId: 'epic',
       onAddTask: vi.fn(),
       onTaskClick: vi.fn(),
+      refreshRevision,
     }),
   );
 }
 
 describe('epic task list', () => {
+  it('forwards explicit invalidation revisions without remounting the list', () => {
+    render(2);
+    expect(useEpicTasks).toHaveBeenCalledWith('project', 'epic', 2);
+  });
   beforeEach(() => {
     vi.mocked(useEpicTasks).mockReturnValue({ tasks: [task], status: 'success', retry });
   });
@@ -45,7 +50,7 @@ describe('epic task list', () => {
     expect(html).toContain('md:gap-0');
     expect(html).not.toContain('<img');
     expect(html).not.toMatch(/Overdue|menu/);
-    expect(useEpicTasks).toHaveBeenCalledWith('project', 'epic');
+    expect(useEpicTasks).toHaveBeenCalledWith('project', 'epic', undefined);
     expect(html).toContain('aria-label="View details for Cloud Database Schema"');
   });
 

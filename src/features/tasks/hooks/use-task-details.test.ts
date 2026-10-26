@@ -60,6 +60,8 @@ const task = {
   status: 'REOPENED',
   epic: null,
   assigneeName: null,
+  assigneeId: null,
+  canEdit: false,
   createdByName: null,
   dueDate: null,
   createdAt: null,

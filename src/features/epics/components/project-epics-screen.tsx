@@ -38,6 +38,7 @@ export function ProjectEpicsScreen({ projectId }: ProjectEpicsScreenProps) {
   const [searchInput, setSearchInput] = useState(searchTerm);
   const [selectedEpicId, setSelectedEpicId] = useState<string | null>(null);
   const [selectedTask, setSelectedTask] = useState<SelectedEpicTask | null>(null);
+  const [taskRefreshRevision, setTaskRefreshRevision] = useState(0);
   const [taskEpicId, setTaskEpicId] = useState<string | null>(null);
   const pageFromUrl = Number(searchParams.get('page') ?? '1');
   const currentPage = Number.isInteger(pageFromUrl) && pageFromUrl > 0 ? pageFromUrl : 1;
@@ -320,6 +321,7 @@ export function ProjectEpicsScreen({ projectId }: ProjectEpicsScreenProps) {
       </Link>
 
       <EpicDetailsModal
+        taskRefreshRevision={taskRefreshRevision}
         isOpen={selectedEpicId !== null && taskEpicId === null}
         epic={selectedEpic}
         status={epicDetailsStatus === 'idle' ? 'loading' : epicDetailsStatus}
@@ -342,7 +344,14 @@ export function ProjectEpicsScreen({ projectId }: ProjectEpicsScreenProps) {
           onCreated={() => setSelectedEpicId(null)}
         />
       )}
-      <TaskDetailsDialog projectId={projectId} taskId={selectedTaskId} onClose={handleCloseTask} />
+      <TaskDetailsDialog
+        projectId={projectId}
+        taskId={selectedTaskId}
+        onClose={handleCloseTask}
+        onUpdated={(event) => {
+          if (event.projectId === projectId) setTaskRefreshRevision((revision) => revision + 1);
+        }}
+      />
     </div>
   );
 }

@@ -5,16 +5,18 @@ import { useRouter } from 'next/navigation';
 import { epicTaskSchema, type EpicTask } from '../schemas/epic-task-schema';
 
 type TasksState = {
+  refreshRevision: number;
   projectId: string;
   epicId: string;
   status: 'loading' | 'success' | 'error';
   tasks: EpicTask[];
 };
 
-export function useEpicTasks(projectId: string, epicId: string) {
+export function useEpicTasks(projectId: string, epicId: string, refreshRevision = 0) {
   const router = useRouter();
   const [attempt, setAttempt] = useState(0);
   const [state, setState] = useState<TasksState>({
+    refreshRevision,
     projectId,
     epicId,
     status: 'loading',
@@ -25,7 +27,7 @@ export function useEpicTasks(projectId: string, epicId: string) {
     const controller = new AbortController();
 
     async function load() {
-      setState({ projectId, epicId, status: 'loading', tasks: [] });
+      setState({ projectId, epicId, refreshRevision, status: 'loading', tasks: [] });
       try {
         const response = await fetch(
           `/api/projects/${encodeURIComponent(projectId)}/epics/${encodeURIComponent(epicId)}/tasks`,
@@ -42,19 +44,22 @@ export function useEpicTasks(projectId: string, epicId: string) {
         if (controller.signal.aborted) return;
         const parsed = epicTaskSchema.array().safeParse(data);
         if (!parsed.success) throw new Error('Invalid epic tasks response');
-        setState({ projectId, epicId, status: 'success', tasks: parsed.data });
+        setState({ projectId, epicId, refreshRevision, status: 'success', tasks: parsed.data });
       } catch {
         if (!controller.signal.aborted) {
-          setState({ projectId, epicId, status: 'error', tasks: [] });
+          setState({ projectId, epicId, refreshRevision, status: 'error', tasks: [] });
         }
       }
     }
 
     void load();
     return () => controller.abort();
-  }, [projectId, epicId, attempt, router]);
+  }, [projectId, epicId, attempt, router, refreshRevision]);
 
-  const current = state.projectId === projectId && state.epicId === epicId;
+  const current =
+    state.projectId === projectId &&
+    state.epicId === epicId &&
+    state.refreshRevision === refreshRevision;
   return {
     tasks: current ? state.tasks : [],
     status: current ? state.status : ('loading' as const),

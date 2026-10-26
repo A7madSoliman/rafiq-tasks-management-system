@@ -15,6 +15,8 @@ export const taskDetailsSchema = z.object({
     })
     .nullable(),
   assigneeName: z.string().nullable(),
+  assigneeId: z.uuid().nullable(),
+  canEdit: z.boolean(),
   createdByName: z.string().nullable(),
   dueDate: z.iso.datetime({ offset: true }).nullable(),
   createdAt: z.iso.datetime({ offset: true }).nullable(),

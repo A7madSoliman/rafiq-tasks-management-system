@@ -167,6 +167,8 @@ describe('GET task details', () => {
         title: 'Authentication',
       },
       assigneeName: 'Jane Doe',
+      assigneeId: userId,
+      canEdit: asOwner,
       createdByName: 'Task Creator',
       dueDate: task.due_date,
       createdAt: task.created_at,
@@ -194,6 +196,28 @@ describe('GET task details', () => {
     const body = JSON.stringify(await response.json());
 
     expect(body).not.toMatch(/private@example|assignee@example|server-only-secret|department/);
+  });
+
+  it.each(['owner', 'admin', 'member', 'viewer'])(
+    'reports editing permission for role %s while preserving read access',
+    async (role) => {
+      const fetchMock = mockProjectAccess({ members: [{ ...member, role }] });
+      fetchMock.mockResolvedValueOnce(json([task]));
+      const response = await GET(request(), context);
+      expect(response.status).toBe(200);
+      expect(await response.json()).toMatchObject({
+        assigneeId: userId,
+        canEdit: role !== 'viewer',
+      });
+    },
+  );
+
+  it('keeps a creator with an explicit Viewer role read-only', async () => {
+    const fetchMock = mockProjectAccess({ owner: userId });
+    fetchMock.mockResolvedValueOnce(json([task]));
+    const response = await GET(request(), context);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ canEdit: false });
   });
 
   it('returns 404 when the task is not found', async () => {
@@ -243,6 +267,8 @@ describe('GET task details', () => {
       description: null,
       epic: null,
       assigneeName: null,
+      assigneeId: null,
+      canEdit: false,
       createdByName: null,
       dueDate: null,
       createdAt: null,
