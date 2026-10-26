@@ -44,15 +44,54 @@ const task = {
 };
 const dataResponse = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status });
-function HookHarness(projectId = 'project', epicId = 'epic-a') {
+function HookHarness(projectId = 'project', epicId = 'epic-a', revision = 0) {
   hooks.index = 0;
-  return useEpicTasks(projectId, epicId);
+  return useEpicTasks(projectId, epicId, revision);
 }
 function startEffect() {
   return hooks.effects.pop()?.();
 }
 
 describe('epic tasks requests', () => {
+  it('refreshes task changes/removals by revision and ignores a late previous list', async () => {
+    let resolveOld!: (body: unknown) => void;
+    const oldBody = new Promise<unknown>((resolve) => {
+      resolveOld = resolve;
+    });
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce({ ok: true, status: 200, json: () => oldBody } as Response)
+        .mockResolvedValueOnce(
+          dataResponse([
+            { ...task, title: 'Updated', assigneeName: 'Jane', dueDate: '2099-01-01T00:00:00Z' },
+          ]),
+        )
+        .mockResolvedValueOnce(dataResponse([])),
+    );
+    HookHarness();
+    const cleanup = startEffect();
+    await Promise.resolve();
+    cleanup?.();
+    HookHarness('project', 'epic-a', 1);
+    startEffect();
+    await vi.waitFor(() =>
+      expect(HookHarness('project', 'epic-a', 1).tasks[0]).toMatchObject({
+        title: 'Updated',
+        assigneeName: 'Jane',
+      }),
+    );
+    resolveOld([task]);
+    await oldBody;
+    await Promise.resolve();
+    expect(HookHarness('project', 'epic-a', 1).tasks[0]?.title).toBe('Updated');
+    expect(HookHarness('project', 'epic-a', 2)).toMatchObject({ status: 'loading', tasks: [] });
+    startEffect();
+    await vi.waitFor(() =>
+      expect(HookHarness('project', 'epic-a', 2)).toMatchObject({ status: 'success', tasks: [] }),
+    );
+  });
   beforeEach(() => {
     hooks.states = [];
     hooks.effects = [];

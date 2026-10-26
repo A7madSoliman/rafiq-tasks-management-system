@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { getTodayLocalDate } from '../utils/get-today-local-date';
 
 type EpicDetailsContentProps = {
+  taskRefreshRevision?: number;
   epic: ProjectEpic;
   onAddTask: () => void;
   description: string;
@@ -67,6 +68,7 @@ function EpicUserValue({ name }: { name: string }) {
 }
 
 export function EpicDetailsContent({
+  taskRefreshRevision,
   epic,
   onAddTask,
   description,
@@ -239,6 +241,7 @@ export function EpicDetailsContent({
         </EpicMetaItem>
       </div>
       <EpicTasks
+        refreshRevision={taskRefreshRevision}
         projectId={epic.projectId}
         epicId={epic.id}
         onAddTask={onAddTask}

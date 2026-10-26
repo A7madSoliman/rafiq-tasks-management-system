@@ -3,7 +3,9 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useTaskDetails } from '../hooks/use-task-details';
-import { useTaskTextUpdates } from '../hooks/use-task-text-updates';
+import { useTaskUpdates } from '../hooks/use-task-updates';
+import { useProjectMembers } from '@/features/projects/hooks/use-project-members';
+import { useTaskEpics } from '../hooks/use-task-epics';
 import type { TaskDetails } from '../schemas/task-details-schema';
 import { TaskDetailsDialog } from './task-details-dialog';
 
@@ -24,7 +26,9 @@ vi.mock('react-dom', () => ({
   },
 }));
 vi.mock('../hooks/use-task-details', () => ({ useTaskDetails: vi.fn() }));
-vi.mock('../hooks/use-task-text-updates', () => ({ useTaskTextUpdates: vi.fn() }));
+vi.mock('../hooks/use-task-updates', () => ({ useTaskUpdates: vi.fn() }));
+vi.mock('@/features/projects/hooks/use-project-members', () => ({ useProjectMembers: vi.fn() }));
+vi.mock('../hooks/use-task-epics', () => ({ useTaskEpics: vi.fn() }));
 vi.mock('@/assets/icons/navigation/close.svg', () => ({ default: () => null }));
 vi.mock('@/assets/icons/epics/details/date.svg', () => ({ default: () => null }));
 
@@ -44,7 +48,7 @@ const task: TaskDetails = {
   createdByName: null,
 };
 const onClose = vi.fn();
-let editor: ReturnType<typeof useTaskTextUpdates>;
+let editor: ReturnType<typeof useTaskUpdates>;
 const cleanups: (() => void)[] = [];
 
 function render() {
@@ -75,6 +79,10 @@ describe('TaskDetailsDialog', () => {
     editor = {
       title: task.title,
       description: '',
+      assigneeId: '',
+      epicId: '',
+      dueDate: '',
+      status: 'TO_DO',
       saving: {},
       errors: {},
       isClosing: false,
@@ -83,14 +91,20 @@ describe('TaskDetailsDialog', () => {
       close: vi.fn(async (close: () => void) => close()),
     };
     vi.mocked(useTaskDetails).mockReturnValue({ task, status: 'success', retry: vi.fn() });
-    vi.mocked(useTaskTextUpdates).mockImplementation(() => editor);
+    vi.mocked(useTaskUpdates).mockImplementation(() => editor);
+    vi.mocked(useProjectMembers).mockReturnValue({
+      members: [],
+      status: 'success',
+      retry: vi.fn(),
+    });
+    vi.mocked(useTaskEpics).mockReturnValue({ epics: [], status: 'success', retry: vi.fn() });
   });
   afterEach(() => {
     cleanups.splice(0).forEach((cleanup) => cleanup());
     vi.unstubAllGlobals();
   });
 
-  it('renders only title and description editors with the existing responsive dimensions', () => {
+  it('renders text and attribute editors with the existing responsive dimensions', () => {
     const html = render();
     expect(html).toContain('id="task-details-title"');
     expect(html).toContain('id="task-details-description"');
@@ -98,8 +112,10 @@ describe('TaskDetailsDialog', () => {
     expect(html).toContain('md:max-w-[896px]');
     expect(html).toContain('rounded-t-[24px]');
     expect(html).toContain('md:min-h-[472px]');
-    expect(html).not.toContain('<select');
-    expect(html).not.toContain('type="date"');
+    expect(html).toContain('aria-label="Task assignee"');
+    expect(html).toContain('aria-label="Task epic"');
+    expect(html).toContain('aria-label="Task status"');
+    expect(html).toContain('type="date"');
     expect(html).toContain('Created By');
     expect(html).toContain('Created At');
   });
@@ -115,6 +131,53 @@ describe('TaskDetailsDialog', () => {
     expect(html).toContain('No description provided.');
     expect(html).not.toContain('<input');
     expect(html).not.toContain('<textarea');
+    expect(html).not.toContain('<select');
+    expect(useProjectMembers).toHaveBeenCalledWith(task.projectId, false);
+    expect(useTaskEpics).toHaveBeenCalledWith(task.projectId, false);
+  });
+
+  it('retains unavailable assignee, epic and unknown status options without clearing them', () => {
+    editor = {
+      ...editor,
+      assigneeId: 'missing-member',
+      epicId: 'missing-epic',
+      status: 'LEGACY_STATUS',
+    };
+    const html = render();
+    expect(html).toContain('value="missing-member" disabled="" selected=""');
+    expect(html).toContain('value="missing-epic" disabled="" selected=""');
+    expect(html).toContain('value="LEGACY_STATUS" disabled="" selected=""');
+    expect(html).toContain('Unassigned');
+    expect(html).toContain('No Epic');
+    expect(editor.save).not.toHaveBeenCalled();
+  });
+
+  it('shows option loading and retry feedback and uses user IDs for assignee options', () => {
+    vi.mocked(useProjectMembers).mockReturnValue({
+      members: [
+        {
+          id: 'membership-id',
+          userId: 'user-id',
+          name: 'Jane',
+          email: 'jane@example.com',
+          role: 'member',
+        },
+      ],
+      status: 'success',
+      retry: vi.fn(),
+    });
+    vi.mocked(useTaskEpics).mockReturnValue({ epics: [], status: 'error', retry: vi.fn() });
+    let html = render();
+    expect(html).toContain('value="user-id"');
+    expect(html).not.toContain('value="membership-id"');
+    expect(html).toContain('Unable to load epics. Retry');
+    vi.mocked(useProjectMembers).mockReturnValue({
+      members: [],
+      status: 'loading',
+      retry: vi.fn(),
+    });
+    html = render();
+    expect(html).toContain('Loading members...');
   });
 
   it('disables only the saving field and associates accessible feedback', () => {

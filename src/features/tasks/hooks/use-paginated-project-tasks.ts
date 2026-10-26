@@ -46,12 +46,16 @@ export function usePaginatedProjectTasks(
   statusFilter: TaskStatus | null = null,
   enabled = true,
   searchTerm = '',
+  refreshRevision = 0,
 ) {
   const router = useRouter();
 
   const normalizedSearchTerm = normalizeTaskSearchTerm(searchTerm);
 
-  const queryKey = createTaskQueryKey(projectId, statusFilter, normalizedSearchTerm);
+  const queryKey = JSON.stringify([
+    createTaskQueryKey(projectId, statusFilter, normalizedSearchTerm),
+    refreshRevision,
+  ]);
 
   const [state, setState] = useState<PaginationState>(() => createInitialState(queryKey));
 

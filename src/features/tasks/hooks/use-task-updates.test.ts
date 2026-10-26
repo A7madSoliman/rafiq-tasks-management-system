@@ -1,8 +1,10 @@
-﻿import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TaskDetails } from '../schemas/task-details-schema';
+import type { TaskUpdateEvent } from '../types/task-update-event';
 
 // Follow the existing hook harness pattern; no DOM/test-library dependency is needed.
 const hooks = vi.hoisted(() => ({
+  onUpdated: vi.fn<(event: TaskUpdateEvent) => void>(),
   slots: [] as unknown[],
   index: 0,
   dependencies: undefined as readonly unknown[] | undefined,
@@ -43,7 +45,7 @@ vi.mock('react', () => ({
   },
 }));
 
-import { useTaskTextUpdates } from './use-task-text-updates';
+import { useTaskUpdates } from './use-task-updates';
 
 const task: TaskDetails = {
   id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
@@ -63,7 +65,7 @@ const task: TaskDetails = {
 const failedMessage = 'Failed to update task. Please try again.';
 
 function TaskTextUpdatesHookHarness(currentTask: TaskDetails | null) {
-  return useTaskTextUpdates(currentTask);
+  return useTaskUpdates(currentTask, hooks.onUpdated);
 }
 
 function HookHarness(currentTask: TaskDetails | null = task) {
@@ -76,7 +78,14 @@ function HookHarness(currentTask: TaskDetails | null = task) {
   return result;
 }
 function persisted(
-  changes: Partial<{ title: string; description: string | null }> = {},
+  changes: Partial<{
+    title: string;
+    description: string | null;
+    assignee_id: string | null;
+    epic_id: string | null;
+    due_date: string | null;
+    status: string;
+  }> = {},
   status = 200,
 ) {
   return new Response(
@@ -112,15 +121,125 @@ function resetHarness() {
   hooks.effects = [];
 }
 
-describe('useTaskTextUpdates', () => {
+describe('useTaskUpdates', () => {
   beforeEach(() => {
     resetHarness();
     vi.clearAllMocks();
     vi.stubGlobal('fetch', vi.fn());
   });
   afterEach(() => {
+    vi.useRealTimers();
     hooks.cleanup?.();
     vi.unstubAllGlobals();
+  });
+
+  it.each([
+    {
+      field: 'assignee_id',
+      selection: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+      displayed: 'assigneeId',
+    },
+    { field: 'epic_id', selection: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc', displayed: 'epicId' },
+    { field: 'due_date', selection: '2099-10-26', displayed: 'dueDate' },
+    { field: 'status', selection: 'DONE', displayed: 'status' },
+  ] as const)(
+    'saves and confirms only $field, skipping unchanged selections',
+    async ({ field, selection, displayed }) => {
+      const stored = field === 'due_date' ? `${selection}T00:00:00.000Z` : selection;
+      vi.mocked(fetch).mockResolvedValueOnce(persisted({ [field]: stored }));
+      const saving = HookHarness().save(field, selection);
+      expect(HookHarness()[displayed]).toBe(selection);
+      expect(HookHarness().saving[field]).toBe(true);
+      expect(await saving).toBe(true);
+      expect(JSON.parse(String(vi.mocked(fetch).mock.calls[0][1]?.body))).toEqual({
+        [field]: selection,
+      });
+      expect(hooks.onUpdated).toHaveBeenCalledWith({
+        projectId: task.projectId,
+        taskId: task.id,
+        changes: { [field]: stored },
+      });
+      await HookHarness().save(field, selection);
+      expect(fetch).toHaveBeenCalledOnce();
+    },
+  );
+
+  it.each(['assignee_id', 'epic_id', 'due_date'] as const)('clears %s to null', async (field) => {
+    const selected = field === 'due_date' ? '2099-10-26' : 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(
+        persisted({ [field]: field === 'due_date' ? `${selected}T00:00:00Z` : selected }),
+      )
+      .mockResolvedValueOnce(persisted({ [field]: null }));
+    await HookHarness().save(field, selected);
+    expect(await HookHarness().save(field, '')).toBe(true);
+    expect(vi.mocked(fetch).mock.calls[1][1]?.body).toBe(JSON.stringify({ [field]: null }));
+    await HookHarness().save(field, '');
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps an existing past date until changed and rejects new past/invalid dates', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-26T23:59:00Z'));
+    const pastTask = { ...task, dueDate: '2020-01-01T00:00:00Z' };
+    expect(HookHarness(pastTask).dueDate).toBe('2020-01-01');
+    expect(await HookHarness(pastTask).save('due_date', '2020-01-01')).toBe(true);
+    expect(await HookHarness(pastTask).save('due_date', '2020-01-02')).toBe(false);
+    expect(await HookHarness(pastTask).save('due_date', '2026-02-29')).toBe(false);
+    expect(HookHarness(pastTask).dueDate).toBe('2020-01-01');
+    expect(fetch).not.toHaveBeenCalled();
+    vi.mocked(fetch).mockResolvedValueOnce(persisted({ due_date: '2026-10-26T02:00:00+02:00' }));
+    expect(await HookHarness(pastTask).save('due_date', '2026-10-26')).toBe(true);
+  });
+
+  it('rejects invalid IDs and unsupported statuses while preserving unknown current status', async () => {
+    const legacyTask = { ...task, status: 'LEGACY' };
+    expect(HookHarness(legacyTask).status).toBe('LEGACY');
+    expect(await HookHarness(legacyTask).save('status', 'COMPLETED')).toBe(false);
+    expect(await HookHarness(legacyTask).save('assignee_id', 'membership-id')).toBe(false);
+    expect(await HookHarness(legacyTask).save('epic_id', 'not-a-uuid')).toBe(false);
+    expect(fetch).not.toHaveBeenCalled();
+    expect(hooks.onUpdated).not.toHaveBeenCalled();
+  });
+
+  it('isolates concurrent text/attribute saves, rollback and confirmed callback payloads', async () => {
+    const status = deferred();
+    const title = deferred();
+    vi.mocked(fetch).mockReturnValueOnce(status.promise).mockReturnValueOnce(title.promise);
+    const statusSave = HookHarness().save('status', 'DONE');
+    expect(HookHarness().save('status', 'BLOCKED')).toBe(statusSave);
+    HookHarness().change('title', 'New title');
+    const titleSave = HookHarness().save('title');
+    title.resolve(persisted({ title: 'New title', status: 'TO_DO' }));
+    await titleSave;
+    status.resolve(persisted({}, 500));
+    await statusSave;
+    expect(HookHarness()).toMatchObject({ title: 'New title', status: 'TO_DO' });
+    expect(hooks.onUpdated.mock.calls).toEqual([
+      [{ projectId: task.projectId, taskId: task.id, changes: { title: 'New title' } }],
+    ]);
+  });
+
+  it('rejects unconfirmed attribute responses and emits no invalidation', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(persisted());
+    expect(await HookHarness().save('status', 'DONE')).toBe(false);
+    expect(HookHarness().status).toBe('TO_DO');
+    expect(hooks.onUpdated).not.toHaveBeenCalled();
+  });
+
+  it('waits for attribute saves during close and stays open on failure', async () => {
+    const pending = deferred();
+    vi.mocked(fetch).mockReturnValueOnce(pending.promise);
+    const onClose = vi.fn();
+    const saving = HookHarness().save('status', 'DONE');
+    const closing = HookHarness().close(onClose);
+    expect(await HookHarness().save('epic_id', '')).toBe(false);
+    expect(onClose).not.toHaveBeenCalled();
+    pending.resolve(persisted({}, 403));
+    await saving;
+    await closing;
+    expect(onClose).not.toHaveBeenCalled();
+    expect(HookHarness().isClosing).toBe(false);
   });
 
   it('initializes when loaded details arrive without treating them as edits', async () => {

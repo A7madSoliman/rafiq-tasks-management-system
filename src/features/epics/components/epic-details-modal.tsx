@@ -9,6 +9,7 @@ import type { ProjectEpic } from '../types/project-epic';
 import { EpicDetailsContent } from './epic-details-content';
 
 type EpicDetailsModalProps = {
+  taskRefreshRevision?: number;
   isOpen: boolean;
   epic: ProjectEpic | null;
   status: 'loading' | 'success' | 'error';
@@ -37,6 +38,7 @@ export function EpicDetailsModal(props: EpicDetailsModalProps) {
 }
 
 function EpicDetailsModalContent({
+  taskRefreshRevision,
   epic,
   status,
   errorMessage,
@@ -346,6 +348,7 @@ function EpicDetailsModalContent({
 
           {status === 'success' && epic && (
             <EpicDetailsContent
+              taskRefreshRevision={taskRefreshRevision}
               epic={epic}
               onAddTask={() => onAddTask(epic.id)}
               description={draft.description}

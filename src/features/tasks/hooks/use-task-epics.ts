@@ -16,7 +16,7 @@ type TaskEpicsState = {
 
 const PAGE_SIZE = 100;
 
-export function useTaskEpics(projectId: string) {
+export function useTaskEpics(projectId: string, enabled = true) {
   const router = useRouter();
   const [retryCount, setRetryCount] = useState(0);
 
@@ -27,6 +27,7 @@ export function useTaskEpics(projectId: string) {
   });
 
   useEffect(() => {
+    if (!enabled || !projectId) return;
     const controller = new AbortController();
 
     async function loadEpics() {
@@ -63,7 +64,12 @@ export function useTaskEpics(projectId: string) {
 
           const totalCount = parseContentRangeTotal(response.headers.get('content-range'));
 
-          if (!response.ok || !isProjectEpics(data) || totalCount === null) {
+          if (
+            !response.ok ||
+            !isProjectEpics(data) ||
+            totalCount === null ||
+            data.some((epic) => epic.projectId !== projectId)
+          ) {
             setState({
               projectId,
               epics: [],
@@ -110,9 +116,9 @@ export function useTaskEpics(projectId: string) {
     return () => {
       controller.abort();
     };
-  }, [projectId, retryCount, router]);
+  }, [projectId, retryCount, router, enabled]);
 
-  const isCurrentProject = state.projectId === projectId;
+  const isCurrentProject = enabled && state.projectId === projectId;
 
   function retry() {
     setState({

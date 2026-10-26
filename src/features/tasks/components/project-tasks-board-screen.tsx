@@ -18,6 +18,7 @@ import { TaskBoardColumn } from './task-board-column';
 import { TaskBoardDesktopHeader } from './task-board-desktop-header';
 import { TaskBoardMobileScreen } from './task-board-mobile-screen';
 import { TaskDetailsDialog } from './task-details-dialog';
+import type { TaskUpdateEvent } from '../types/task-update-event';
 
 type LocalTasksState = {
   projectId: string;
@@ -30,6 +31,7 @@ type SelectedTask = {
 };
 
 type DesktopPaginatedColumnProps = {
+  refreshRevision: number;
   projectId: string;
   status: (typeof TASK_STATUSES)[number];
   searchTerm: string;
@@ -40,6 +42,7 @@ type DesktopPaginatedColumnProps = {
 };
 
 type MobileTasksContentProps = {
+  refreshRevision: number;
   projectId: string;
   searchTerm: string;
   searchValue: string;
@@ -56,6 +59,7 @@ type MobileTasksContentProps = {
  * All columns share the same search term.
  */
 function DesktopPaginatedColumn({
+  refreshRevision,
   projectId,
   status,
   searchTerm,
@@ -74,7 +78,7 @@ function DesktopPaginatedColumn({
     loadMore,
     retry,
     retryLoadMore,
-  } = usePaginatedProjectTasks(projectId, status.value, true, searchTerm);
+  } = usePaginatedProjectTasks(projectId, status.value, true, searchTerm, refreshRevision);
 
   const loadedTaskIds = new Set(paginatedTasks.map((task) => task.id));
 
@@ -108,6 +112,7 @@ function DesktopPaginatedColumn({
  * All project tasks use one paginated list.
  */
 function MobileTasksContent({
+  refreshRevision,
   projectId,
   searchTerm,
   searchValue,
@@ -126,7 +131,7 @@ function MobileTasksContent({
     loadMore,
     retry,
     retryLoadMore,
-  } = usePaginatedProjectTasks(projectId, null, true, searchTerm);
+  } = usePaginatedProjectTasks(projectId, null, true, searchTerm, refreshRevision);
 
   const loadedTaskIds = new Set(paginatedTasks.map((task) => task.id));
 
@@ -186,6 +191,7 @@ export function ProjectTasksBoardScreen() {
   });
 
   const [selectedTask, setSelectedTask] = useState<SelectedTask | null>(null);
+  const [refreshRevision, setRefreshRevision] = useState(0);
 
   const {
     members,
@@ -233,6 +239,22 @@ export function ProjectTasksBoardScreen() {
   }, []);
 
   const selectedTaskId = selectedTask?.projectId === projectId ? selectedTask.taskId : null;
+
+  function handleTaskUpdated(event: TaskUpdateEvent) {
+    if (event.projectId !== projectId) return;
+    setLocalTasksState((current) =>
+      current.projectId !== event.projectId
+        ? current
+        : {
+            ...current,
+            tasks: current.tasks.map((task) =>
+              task.id === event.taskId ? { ...task, ...event.changes } : task,
+            ),
+          },
+    );
+    if ('assignee_id' in event.changes) retryMembers();
+    setRefreshRevision((revision) => revision + 1);
+  }
 
   const handleTaskCreated = useCallback(
     (task: CreatedTask) => {
@@ -307,6 +329,7 @@ export function ProjectTasksBoardScreen() {
             <div className="flex h-[calc(100dvh-282px)] min-h-[520px] w-max gap-6 pb-4">
               {TASK_STATUSES.map((status) => (
                 <DesktopPaginatedColumn
+                  refreshRevision={refreshRevision}
                   key={`${projectId}:${status.value}`}
                   projectId={projectId}
                   status={status}
@@ -322,6 +345,7 @@ export function ProjectTasksBoardScreen() {
         </section>
       ) : (
         <MobileTasksContent
+          refreshRevision={refreshRevision}
           key={projectId}
           projectId={projectId}
           searchTerm={debouncedSearchTerm}
@@ -342,7 +366,12 @@ export function ProjectTasksBoardScreen() {
         initialStatus={initialTaskStatus}
       />
 
-      <TaskDetailsDialog projectId={projectId} taskId={selectedTaskId} onClose={handleCloseTask} />
+      <TaskDetailsDialog
+        projectId={projectId}
+        taskId={selectedTaskId}
+        onClose={handleCloseTask}
+        onUpdated={handleTaskUpdated}
+      />
     </div>
   );
 }

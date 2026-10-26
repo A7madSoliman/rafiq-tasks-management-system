@@ -8,21 +8,26 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { FieldLabel } from '@/components/ui/field-label';
+import { useProjectMembers } from '@/features/projects/hooks/use-project-members';
+import { useTaskEpics } from '../hooks/use-task-epics';
+import type { TaskUpdateEvent } from '../types/task-update-event';
 import { TASK_STATUSES } from '../constants/task-statuses';
 import { useTaskDetails } from '../hooks/use-task-details';
-import { useTaskTextUpdates } from '../hooks/use-task-text-updates';
+import { useTaskUpdates } from '../hooks/use-task-updates';
 import type { TaskDetails } from '../schemas/task-details-schema';
 
 type TaskDetailsDialogProps = {
   projectId: string;
   taskId: string | null;
   onClose: () => void;
+  onUpdated?: (event: TaskUpdateEvent) => void;
 };
 
 type DialogContentProps = {
   projectId: string;
   taskId: string;
   onClose: () => void;
+  onUpdated?: (event: TaskUpdateEvent) => void;
 };
 
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
@@ -33,11 +38,11 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
 });
 
 function formatDate(value: string | null) {
-  if (!value) return '—';
+  if (!value) return 'â€”';
 
   const date = new Date(value);
 
-  return Number.isNaN(date.getTime()) ? '—' : dateFormatter.format(date);
+  return Number.isNaN(date.getTime()) ? 'â€”' : dateFormatter.format(date);
 }
 
 function getInitials(name: string) {
@@ -49,7 +54,15 @@ function getInitials(name: string) {
     .join('');
 }
 
-function DetailField({ label, children }: { label: string; children: ReactNode }) {
+function DetailField({
+  label,
+  children,
+  feedback,
+}: {
+  label: string;
+  children: ReactNode;
+  feedback?: ReactNode;
+}) {
   return (
     <div className="flex min-w-0 flex-col gap-3">
       <dt className="text-foreground-secondary text-xs font-bold tracking-[0.5px] uppercase">
@@ -59,6 +72,7 @@ function DetailField({ label, children }: { label: string; children: ReactNode }
       <dd className="border-surface-highest bg-surface text-foreground m-0 flex min-h-10 min-w-0 items-center rounded-md border px-2 py-2 text-xs leading-[18px] font-medium break-words">
         {children}
       </dd>
+      {feedback}
     </div>
   );
 }
@@ -82,33 +96,207 @@ function PersonValue({ name, fallback }: { name: string | null; fallback: string
   );
 }
 
-function TaskAttributes({ task }: { task: TaskDetails }) {
+type AttributeOptions = {
+  members: ReturnType<typeof useProjectMembers>;
+  epics: ReturnType<typeof useTaskEpics>;
+};
+
+type TaskEditor = ReturnType<typeof useTaskUpdates>;
+
+function TaskAttributes({
+  task,
+  editor,
+  options,
+}: {
+  task: TaskDetails;
+  editor: TaskEditor;
+  options: AttributeOptions;
+}) {
   const knownStatus = TASK_STATUSES.find((item) => item.value === task.status);
 
   const epicText = task.epic
     ? [task.epic.code ? `(${task.epic.code})` : null, task.epic.title].filter(Boolean).join(' ') ||
       task.epic.id
     : 'No epic';
+  const selectClassName =
+    'text-foreground focus-visible:ring-primary w-full min-w-0 rounded-sm bg-transparent text-xs outline-none focus-visible:ring-2 disabled:opacity-60';
+  const disabled = (field: 'status' | 'assignee_id' | 'epic_id' | 'due_date') =>
+    Boolean(editor.saving[field]) || editor.isClosing;
+  const feedback = (field: 'status' | 'assignee_id' | 'epic_id' | 'due_date') => (
+    <>
+      {editor.saving[field] && (
+        <p role="status" className="text-foreground-muted text-xs">
+          Saving...
+        </p>
+      )}
+      {editor.errors[field] && (
+        <p role="alert" className="text-error text-xs">
+          {editor.errors[field]}
+        </p>
+      )}
+    </>
+  );
 
   return (
     <dl className="flex flex-col gap-5">
-      <DetailField label="Status">
-        <span className="bg-surface-nested text-foreground inline-flex rounded-xs px-2 py-1 font-semibold">
-          {knownStatus?.label ?? task.status.replaceAll('_', ' ')}
-        </span>
+      <DetailField label="Status" feedback={feedback('status')}>
+        {task.canEdit ? (
+          <select
+            aria-label="Task status"
+            value={editor.status}
+            disabled={disabled('status')}
+            aria-busy={Boolean(editor.saving.status)}
+            aria-invalid={Boolean(editor.errors.status)}
+            onChange={(event) => void editor.save('status', event.target.value)}
+            className={selectClassName}
+          >
+            {!TASK_STATUSES.some((status) => status.value === editor.status) && (
+              <option value={editor.status} disabled>
+                {editor.status.replaceAll('_', ' ')}
+              </option>
+            )}
+            {TASK_STATUSES.map((status) => (
+              <option key={status.value} value={status.value}>
+                {status.label}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <span className="bg-surface-nested text-foreground inline-flex rounded-xs px-2 py-1 font-semibold">
+            {knownStatus?.label ?? task.status.replaceAll('_', ' ')}
+          </span>
+        )}
       </DetailField>
 
-      <DetailField label="Assignee">
-        <PersonValue name={task.assigneeName} fallback="Unassigned" />
+      <DetailField
+        label="Assignee"
+        feedback={
+          <>
+            {feedback('assignee_id')}
+            {task.canEdit && options.members.status !== 'success' && (
+              <p role="status" className="text-foreground-muted text-xs">
+                {options.members.status === 'loading' ? (
+                  'Loading members...'
+                ) : (
+                  <button type="button" onClick={options.members.retry} className="text-primary">
+                    Unable to load members. Retry
+                  </button>
+                )}
+              </p>
+            )}
+          </>
+        }
+      >
+        {task.canEdit ? (
+          <select
+            aria-label="Task assignee"
+            value={editor.assigneeId}
+            disabled={disabled('assignee_id') || options.members.status !== 'success'}
+            aria-busy={options.members.status === 'loading' || Boolean(editor.saving.assignee_id)}
+            aria-invalid={Boolean(editor.errors.assignee_id)}
+            onChange={(event) => void editor.save('assignee_id', event.target.value)}
+            className={selectClassName}
+          >
+            <option value="">Unassigned</option>
+            {editor.assigneeId &&
+              !options.members.members.some((member) => member.userId === editor.assigneeId) && (
+                <option value={editor.assigneeId} disabled>
+                  {editor.assigneeId === task.assigneeId
+                    ? (task.assigneeName ?? 'Unavailable member')
+                    : 'Unavailable member'}{' '}
+                  (unavailable)
+                </option>
+              )}
+            {options.members.members.map((member) => (
+              <option key={member.userId} value={member.userId}>
+                {member.name}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <PersonValue name={task.assigneeName} fallback="Unassigned" />
+        )}
       </DetailField>
 
-      <DetailField label="Epic">{epicText}</DetailField>
+      <DetailField
+        label="Epic"
+        feedback={
+          <>
+            {feedback('epic_id')}
+            {task.canEdit && options.epics.status !== 'success' && (
+              <p role="status" className="text-foreground-muted text-xs">
+                {options.epics.status === 'loading' ? (
+                  'Loading epics...'
+                ) : (
+                  <button type="button" onClick={options.epics.retry} className="text-primary">
+                    Unable to load epics. Retry
+                  </button>
+                )}
+              </p>
+            )}
+          </>
+        }
+      >
+        {task.canEdit ? (
+          <select
+            aria-label="Task epic"
+            value={editor.epicId}
+            disabled={disabled('epic_id') || options.epics.status !== 'success'}
+            aria-busy={options.epics.status === 'loading' || Boolean(editor.saving.epic_id)}
+            aria-invalid={Boolean(editor.errors.epic_id)}
+            onChange={(event) => void editor.save('epic_id', event.target.value)}
+            className={selectClassName}
+          >
+            <option value="">No Epic</option>
+            {editor.epicId && !options.epics.epics.some((epic) => epic.id === editor.epicId) && (
+              <option value={editor.epicId} disabled>
+                {editor.epicId === task.epic?.id ? epicText : 'Unavailable epic'} (unavailable)
+              </option>
+            )}
+            {options.epics.epics.map((epic) => (
+              <option key={epic.id} value={epic.id}>
+                {epic.epicId} {epic.title}
+              </option>
+            ))}
+          </select>
+        ) : (
+          epicText
+        )}
+      </DetailField>
 
-      <DetailField label="Due Date">
-        <span className="flex items-center gap-2">
-          <DateIcon aria-hidden="true" className="shrink-0" />
-          {task.dueDate ? <time dateTime={task.dueDate}>{formatDate(task.dueDate)}</time> : '—'}
-        </span>
+      <DetailField label="Due Date" feedback={feedback('due_date')}>
+        {task.canEdit ? (
+          <span className="flex w-full min-w-0 items-center gap-2">
+            <DateIcon aria-hidden="true" className="shrink-0" />
+            <Input
+              type="date"
+              aria-label="Task due date"
+              value={editor.dueDate}
+              min={new Date().toISOString().slice(0, 10)}
+              disabled={disabled('due_date')}
+              aria-busy={Boolean(editor.saving.due_date)}
+              aria-invalid={Boolean(editor.errors.due_date)}
+              onChange={(event) => void editor.save('due_date', event.target.value)}
+              className="focus-visible:ring-primary min-w-0 flex-1 bg-transparent px-0 text-xs focus-visible:ring-2 disabled:opacity-60"
+            />
+            {editor.dueDate && (
+              <button
+                type="button"
+                aria-label="Clear task due date"
+                disabled={disabled('due_date')}
+                onClick={() => void editor.save('due_date', '')}
+                className="text-primary shrink-0 text-xs disabled:opacity-60"
+              >
+                Clear
+              </button>
+            )}
+          </span>
+        ) : (
+          <span className="flex items-center gap-2">
+            <DateIcon aria-hidden="true" className="shrink-0" />
+            {task.dueDate ? <time dateTime={task.dueDate}>{formatDate(task.dueDate)}</time> : 'â€”'}
+          </span>
+        )}
       </DetailField>
 
       <DetailField label="Created By">
@@ -121,7 +309,7 @@ function TaskAttributes({ task }: { task: TaskDetails }) {
           {task.createdAt ? (
             <time dateTime={task.createdAt}>{formatDate(task.createdAt)}</time>
           ) : (
-            '—'
+            'â€”'
           )}
         </span>
       </DetailField>
@@ -132,9 +320,11 @@ function TaskAttributes({ task }: { task: TaskDetails }) {
 function TaskContent({
   task,
   editor,
+  options,
 }: {
   task: TaskDetails;
-  editor: ReturnType<typeof useTaskTextUpdates>;
+  editor: TaskEditor;
+  options: AttributeOptions;
 }) {
   return (
     <>
@@ -228,15 +418,18 @@ function TaskContent({
       </div>
 
       <div className="mt-6 md:hidden">
-        <TaskAttributes task={task} />
+        <TaskAttributes task={task} editor={editor} options={options} />
       </div>
     </>
   );
 }
 
-function TaskDetailsDialogContent({ projectId, taskId, onClose }: DialogContentProps) {
+function TaskDetailsDialogContent({ projectId, taskId, onClose, onUpdated }: DialogContentProps) {
   const { task, status, retry } = useTaskDetails(projectId, taskId);
-  const editor = useTaskTextUpdates(task);
+  const editor = useTaskUpdates(task, onUpdated);
+  const members = useProjectMembers(projectId, Boolean(task?.canEdit));
+  const epics = useTaskEpics(projectId, Boolean(task?.canEdit));
+  const options = { members, epics };
   const requestClose = () => void editor.close(onClose);
 
   const dialogRef = useRef<HTMLElement>(null);
@@ -396,7 +589,9 @@ function TaskDetailsDialogContent({ projectId, taskId, onClose }: DialogContentP
               </p>
             )}
 
-            {status === 'success' && task && <TaskContent task={task} editor={editor} />}
+            {status === 'success' && task && (
+              <TaskContent task={task} editor={editor} options={options} />
+            )}
           </div>
 
           <footer className="bg-surface-low hidden shrink-0 px-8 py-4 md:flex">
@@ -414,7 +609,9 @@ function TaskDetailsDialogContent({ projectId, taskId, onClose }: DialogContentP
           aria-label="Task attributes"
           className="border-surface-icon bg-surface-low hidden w-[320px] shrink-0 overflow-y-auto border-l p-8 md:block"
         >
-          {status === 'success' && task && <TaskAttributes task={task} />}
+          {status === 'success' && task && (
+            <TaskAttributes task={task} editor={editor} options={options} />
+          )}
 
           {status === 'loading' && (
             <div aria-hidden="true" className="animate-pulse space-y-6">
@@ -433,7 +630,12 @@ function TaskDetailsDialogContent({ projectId, taskId, onClose }: DialogContentP
   );
 }
 
-export function TaskDetailsDialog({ projectId, taskId, onClose }: TaskDetailsDialogProps) {
+export function TaskDetailsDialog({
+  projectId,
+  taskId,
+  onClose,
+  onUpdated,
+}: TaskDetailsDialogProps) {
   if (!projectId || !taskId || typeof document === 'undefined') {
     return null;
   }
@@ -444,6 +646,7 @@ export function TaskDetailsDialog({ projectId, taskId, onClose }: TaskDetailsDia
       projectId={projectId}
       taskId={taskId}
       onClose={onClose}
+      onUpdated={onUpdated}
     />
   );
 }

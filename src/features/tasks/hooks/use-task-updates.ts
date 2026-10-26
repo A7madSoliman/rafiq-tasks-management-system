@@ -6,23 +6,47 @@ import { toast } from 'sonner';
 
 import type { TaskDetails } from '../schemas/task-details-schema';
 import { updateTaskResponseSchema, updateTaskSchema } from '../schemas/update-task-schema';
+import type { TaskUpdateEvent } from '../types/task-update-event';
 
-type TextField = 'title' | 'description';
-type TextValues = Partial<Record<TextField, string>>;
+type Field = 'title' | 'description' | 'assignee_id' | 'epic_id' | 'due_date' | 'status';
+type FieldValues = Partial<Record<Field, string>>;
+
+function initialValue(task: TaskDetails | null, field: Field): string {
+  if (!task) return '';
+  switch (field) {
+    case 'assignee_id':
+      return task.assigneeId ?? '';
+    case 'epic_id':
+      return task.epic?.id ?? '';
+    case 'due_date':
+      return task.dueDate ? new Date(task.dueDate).toISOString().slice(0, 10) : '';
+    default:
+      return task[field] ?? '';
+  }
+}
+
+function normalize(field: Field, raw: string) {
+  if (field === 'title') return raw.trim();
+  if (field === 'description') return raw.trim() || null;
+  return field === 'status' ? raw : raw || null;
+}
 
 const failureMessage = 'Failed to update task. Please try again.';
 
 // Owned by the dialog content, which is keyed by project/task and remounted on reopen.
-export function useTaskTextUpdates(task: TaskDetails | null) {
+export function useTaskUpdates(
+  task: TaskDetails | null,
+  onUpdated?: (event: TaskUpdateEvent) => void,
+) {
   const router = useRouter();
-  const [draft, setDraft] = useState<TextValues>({});
-  const [saving, setSaving] = useState<Partial<Record<TextField, boolean>>>({});
-  const [errors, setErrors] = useState<TextValues>({});
+  const [draft, setDraft] = useState<FieldValues>({});
+  const [saving, setSaving] = useState<Partial<Record<Field, boolean>>>({});
+  const [errors, setErrors] = useState<FieldValues>({});
   const [isClosing, setIsClosing] = useState(false);
 
-  const draftRef = useRef<TextValues>({});
-  const confirmedRef = useRef<Partial<Record<TextField, string | null>>>({});
-  const pendingRef = useRef<Partial<Record<TextField, Promise<boolean>>>>({});
+  const draftRef = useRef<FieldValues>({});
+  const confirmedRef = useRef<FieldValues>({});
+  const pendingRef = useRef<Partial<Record<Field, Promise<boolean>>>>({});
   const closingRef = useRef(false);
   const generationRef = useRef(0);
 
@@ -33,37 +57,46 @@ export function useTaskTextUpdates(task: TaskDetails | null) {
     };
   }, [task?.projectId, task?.id]);
 
-  function setField(field: TextField, value: string) {
+  function setField(field: Field, value: string) {
     draftRef.current[field] = value;
     setDraft((current) => ({ ...current, [field]: value }));
   }
 
-  function change(field: TextField, value: string) {
+  function change(field: 'title' | 'description', value: string) {
     if (!task?.canEdit || closingRef.current || pendingRef.current[field]) return;
     setField(field, value);
     setErrors((current) => ({ ...current, [field]: undefined }));
   }
 
-  function save(field: TextField): Promise<boolean> {
+  function save(field: Field, selection?: string): Promise<boolean> {
     if (!task?.canEdit) return Promise.resolve(true);
+    if (selection !== undefined && closingRef.current) return Promise.resolve(false);
     const pending = pendingRef.current[field];
     if (pending) return pending;
 
-    const raw = draftRef.current[field] ?? task[field] ?? '';
-    const value = field === 'title' ? raw.trim() : raw.trim() || null;
+    const raw = selection ?? draftRef.current[field] ?? initialValue(task, field);
+    const value = normalize(field, raw);
+    const previous = confirmedRef.current[field] ?? initialValue(task, field);
+    if (value === normalize(field, previous)) {
+      setField(field, value ?? '');
+      setErrors((current) => ({ ...current, [field]: undefined }));
+      return Promise.resolve(true);
+    }
     const parsed = updateTaskSchema.safeParse({ [field]: value });
     if (!parsed.success) {
-      setErrors((current) => ({ ...current, [field]: 'Title is required.' }));
+      setErrors((current) => ({
+        ...current,
+        [field]: field === 'title' ? 'Title is required.' : 'Select a valid value.',
+      }));
+      return Promise.resolve(false);
+    }
+    if (field === 'due_date' && value && value < new Date().toISOString().slice(0, 10)) {
+      setErrors((current) => ({ ...current, [field]: 'Due date cannot be before today.' }));
       return Promise.resolve(false);
     }
 
-    const previous =
-      confirmedRef.current[field] !== undefined ? confirmedRef.current[field] : task[field];
     setField(field, value ?? '');
     setErrors((current) => ({ ...current, [field]: undefined }));
-    if (value === (field === 'title' ? previous?.trim() : previous?.trim() || null)) {
-      return Promise.resolve(true);
-    }
 
     const generation = generationRef.current;
     const isActive = () => generationRef.current === generation;
@@ -94,14 +127,23 @@ export function useTaskTextUpdates(task: TaskDetails | null) {
           !result.success ||
           result.data.task.id !== task.id ||
           result.data.task.project_id !== task.projectId ||
-          result.data.task[field] !== value
+          (field === 'due_date' && value !== null
+            ? result.data.task.due_date === null ||
+              new Date(result.data.task.due_date).getTime() !==
+                new Date(`${value}T00:00:00.000Z`).getTime()
+            : result.data.task[field] !== value)
         )
           throw new Error(failureMessage);
 
         // A response may contain an older value for the other independently saved field.
-        confirmedRef.current[field] = value;
+        confirmedRef.current[field] = value ?? '';
         setField(field, value ?? '');
         toast.success('Task updated successfully.');
+        onUpdated?.({
+          projectId: task.projectId,
+          taskId: task.id,
+          changes: field === 'due_date' ? { due_date: result.data.task.due_date } : parsed.data,
+        });
         return true;
       } catch {
         if (isActive()) {
@@ -128,7 +170,11 @@ export function useTaskTextUpdates(task: TaskDetails | null) {
     closingRef.current = true;
     setIsClosing(true);
     const generation = generationRef.current;
-    const results = await Promise.all([save('title'), save('description')]);
+    const results = await Promise.all([
+      save('title'),
+      save('description'),
+      ...Object.values(pendingRef.current),
+    ]);
     if (generationRef.current !== generation) return;
     if (results.every(Boolean)) onClose();
     closingRef.current = false;
@@ -138,6 +184,10 @@ export function useTaskTextUpdates(task: TaskDetails | null) {
   return {
     title: draft.title ?? task?.title ?? '',
     description: draft.description ?? task?.description ?? '',
+    assigneeId: draft.assignee_id ?? initialValue(task, 'assignee_id'),
+    epicId: draft.epic_id ?? initialValue(task, 'epic_id'),
+    dueDate: draft.due_date ?? initialValue(task, 'due_date'),
+    status: draft.status ?? initialValue(task, 'status'),
     saving,
     errors,
     isClosing,

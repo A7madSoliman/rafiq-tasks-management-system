@@ -11,14 +11,21 @@ import { useEpicTasks } from '../hooks/use-epic-tasks';
 import { formatEpicDeadline } from '../utils/format-epic-deadline';
 
 type EpicTasksProps = {
+  refreshRevision?: number;
   projectId: string;
   epicId: string;
   onAddTask: () => void;
   onTaskClick: (taskId: string) => void;
 };
 
-export function EpicTasks({ projectId, epicId, onAddTask, onTaskClick }: EpicTasksProps) {
-  const { tasks, status, retry } = useEpicTasks(projectId, epicId);
+export function EpicTasks({
+  projectId,
+  epicId,
+  onAddTask,
+  onTaskClick,
+  refreshRevision,
+}: EpicTasksProps) {
+  const { tasks, status, retry } = useEpicTasks(projectId, epicId, refreshRevision);
 
   return (
     <section
