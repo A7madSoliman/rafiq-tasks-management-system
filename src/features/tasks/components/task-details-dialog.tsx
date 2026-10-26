@@ -5,8 +5,12 @@ import { createPortal } from 'react-dom';
 import CloseIcon from '@/assets/icons/navigation/close.svg';
 import DateIcon from '@/assets/icons/epics/details/date.svg';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { FieldLabel } from '@/components/ui/field-label';
 import { TASK_STATUSES } from '../constants/task-statuses';
 import { useTaskDetails } from '../hooks/use-task-details';
+import { useTaskTextUpdates } from '../hooks/use-task-text-updates';
 import type { TaskDetails } from '../schemas/task-details-schema';
 
 type TaskDetailsDialogProps = {
@@ -125,29 +129,102 @@ function TaskAttributes({ task }: { task: TaskDetails }) {
   );
 }
 
-function TaskContent({ task }: { task: TaskDetails }) {
+function TaskContent({
+  task,
+  editor,
+}: {
+  task: TaskDetails;
+  editor: ReturnType<typeof useTaskTextUpdates>;
+}) {
   return (
     <>
       <div className="flex flex-col gap-3">
-        <h3 className="text-foreground-secondary text-xs font-bold tracking-[0.5px] uppercase">
+        <FieldLabel
+          htmlFor={task.canEdit ? 'task-details-title' : undefined}
+          className="text-foreground-secondary text-xs font-bold tracking-[0.5px] uppercase"
+        >
           Title
-        </h3>
+        </FieldLabel>
 
-        <div className="border-surface-highest bg-surface text-foreground flex min-h-[54px] items-center rounded-[12px] border p-3 text-sm leading-[21px] font-semibold break-words">
-          {task.title}
-        </div>
+        {task.canEdit ? (
+          <Input
+            id="task-details-title"
+            value={editor.title}
+            disabled={Boolean(editor.saving.title) || editor.isClosing}
+            aria-busy={Boolean(editor.saving.title)}
+            aria-invalid={Boolean(editor.errors.title)}
+            aria-describedby={
+              editor.errors.title
+                ? 'task-title-error'
+                : editor.saving.title
+                  ? 'task-title-saving'
+                  : undefined
+            }
+            onChange={(event) => editor.change('title', event.target.value)}
+            onBlur={() => void editor.save('title')}
+            className="border-surface-highest bg-surface text-foreground focus-visible:ring-primary min-h-[54px] rounded-[12px] border p-3 text-sm leading-[21px] font-semibold focus-visible:ring-2 disabled:opacity-60"
+          />
+        ) : (
+          <div className="border-surface-highest bg-surface text-foreground flex min-h-[54px] items-center rounded-[12px] border p-3 text-sm leading-[21px] font-semibold break-words">
+            {task.title}
+          </div>
+        )}
+        {editor.saving.title && (
+          <p id="task-title-saving" role="status" className="text-foreground-muted text-xs">
+            Saving title...
+          </p>
+        )}
+        {editor.errors.title && (
+          <p id="task-title-error" role="alert" className="text-error text-xs">
+            {editor.errors.title}
+          </p>
+        )}
       </div>
 
       <div className="mt-6 flex flex-col gap-3">
-        <h3 className="text-foreground-secondary text-xs font-bold tracking-[0.5px] uppercase">
+        <FieldLabel
+          htmlFor={task.canEdit ? 'task-details-description' : undefined}
+          className="text-foreground-secondary text-xs font-bold tracking-[0.5px] uppercase"
+        >
           Description
-        </h3>
+        </FieldLabel>
 
-        <div className="border-surface-highest bg-surface text-foreground min-h-[160px] rounded-[12px] border p-3 text-sm leading-[21px] break-words whitespace-pre-wrap md:min-h-[472px]">
-          {task.description || (
-            <span className="text-foreground-muted">No description provided.</span>
-          )}
-        </div>
+        {task.canEdit ? (
+          <Textarea
+            id="task-details-description"
+            value={editor.description}
+            placeholder="No description provided."
+            disabled={Boolean(editor.saving.description) || editor.isClosing}
+            aria-busy={Boolean(editor.saving.description)}
+            aria-invalid={Boolean(editor.errors.description)}
+            aria-describedby={
+              editor.errors.description
+                ? 'task-description-error'
+                : editor.saving.description
+                  ? 'task-description-saving'
+                  : undefined
+            }
+            onChange={(event) => editor.change('description', event.target.value)}
+            onBlur={() => void editor.save('description')}
+            className="border-surface-highest bg-surface text-foreground placeholder:text-foreground-muted focus-visible:ring-primary min-h-[160px] rounded-[12px] border p-3 text-sm leading-[21px] break-words whitespace-pre-wrap focus-visible:ring-2 disabled:opacity-60 md:min-h-[472px]"
+          />
+        ) : (
+          <div className="border-surface-highest bg-surface text-foreground min-h-[160px] rounded-[12px] border p-3 text-sm leading-[21px] break-words whitespace-pre-wrap md:min-h-[472px]">
+            {task.description || (
+              <span className="text-foreground-muted">No description provided.</span>
+            )}
+          </div>
+        )}
+        {editor.saving.description && (
+          <p id="task-description-saving" role="status" className="text-foreground-muted text-xs">
+            Saving description...
+          </p>
+        )}
+        {editor.errors.description && (
+          <p id="task-description-error" role="alert" className="text-error text-xs">
+            {editor.errors.description}
+          </p>
+        )}
       </div>
 
       <div className="mt-6 md:hidden">
@@ -159,13 +236,15 @@ function TaskContent({ task }: { task: TaskDetails }) {
 
 function TaskDetailsDialogContent({ projectId, taskId, onClose }: DialogContentProps) {
   const { task, status, retry } = useTaskDetails(projectId, taskId);
+  const editor = useTaskTextUpdates(task);
+  const requestClose = () => void editor.close(onClose);
 
   const dialogRef = useRef<HTMLElement>(null);
   const onCloseRef = useRef(onClose);
 
   useEffect(() => {
-    onCloseRef.current = onClose;
-  }, [onClose]);
+    onCloseRef.current = requestClose;
+  });
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
@@ -190,7 +269,7 @@ function TaskDetailsDialogContent({ projectId, taskId, onClose }: DialogContentP
 
       const elements = Array.from(
         dialog.querySelectorAll<HTMLElement>(
-          'button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])',
+          'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])',
         ),
       ).filter((element) => element.tabIndex >= 0 && element.getClientRects().length > 0);
 
@@ -243,7 +322,7 @@ function TaskDetailsDialogContent({ projectId, taskId, onClose }: DialogContentP
         type="button"
         tabIndex={-1}
         aria-label="Close task details"
-        onClick={onClose}
+        onClick={requestClose}
         className="bg-foreground/40 absolute inset-0 cursor-default backdrop-blur-[2px]"
       />
 
@@ -273,7 +352,7 @@ function TaskDetailsDialogContent({ projectId, taskId, onClose }: DialogContentP
 
               <button
                 type="button"
-                onClick={onClose}
+                onClick={requestClose}
                 aria-label="Close task details"
                 className="flex size-[30px] shrink-0 cursor-pointer items-center justify-center rounded-[12px] md:hidden"
               >
@@ -317,13 +396,13 @@ function TaskDetailsDialogContent({ projectId, taskId, onClose }: DialogContentP
               </p>
             )}
 
-            {status === 'success' && task && <TaskContent task={task} />}
+            {status === 'success' && task && <TaskContent task={task} editor={editor} />}
           </div>
 
           <footer className="bg-surface-low hidden shrink-0 px-8 py-4 md:flex">
             <button
               type="button"
-              onClick={onClose}
+              onClick={requestClose}
               className="bg-surface-highest text-foreground cursor-pointer rounded-sm px-4 py-2 text-sm font-semibold"
             >
               Close
