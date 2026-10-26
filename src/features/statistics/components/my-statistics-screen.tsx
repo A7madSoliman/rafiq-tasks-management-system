@@ -7,6 +7,83 @@ import {
   type StatisticsFilters,
 } from '../utils/statistics-filters';
 import { StatisticsFiltersToolbar } from './statistics-filters-toolbar';
+import { useStatisticsData } from '../hooks/use-statistics-data';
+import { StatisticsSummary } from './statistics-summary';
+import { StatisticsCalendar } from './statistics-calendar';
+import { AllProjectsStatistics, TasksByStatus } from './statistics-analytics';
+
+function SectionFeedback({
+  label,
+  retry,
+  loading,
+}: {
+  label: string;
+  retry?: () => void;
+  loading: boolean;
+}) {
+  return (
+    <div className="bg-surface flex min-h-40 flex-col items-center justify-center gap-3 rounded-md p-6 text-center">
+      <p
+        role={loading ? 'status' : 'alert'}
+        className={loading ? 'text-foreground-muted text-sm' : 'text-error text-sm'}
+      >
+        {loading ? `Loading ${label}...` : `Unable to load ${label}.`}
+      </p>
+      {retry && (
+        <button
+          type="button"
+          onClick={retry}
+          className="text-primary min-h-11 text-sm font-semibold underline"
+        >
+          Retry
+        </button>
+      )}
+    </div>
+  );
+}
+
+export function StatisticsContent({ filters }: { filters: StatisticsFilters }) {
+  const { calendar, projects } = useStatisticsData(filters);
+  return (
+    <>
+      {calendar.status === 'success' ? (
+        <>
+          <StatisticsSummary data={calendar.data} />
+          <StatisticsCalendar data={calendar.data} />
+        </>
+      ) : (
+        <SectionFeedback
+          label="calendar statistics"
+          loading={calendar.status === 'loading'}
+          retry={calendar.status === 'error' ? calendar.retry : undefined}
+        />
+      )}
+      <div className="min-w-0">
+        <h2 className="text-foreground mb-3 text-sm font-bold lg:sr-only">Task Statistics</h2>
+        <div className="grid min-w-0 gap-3 lg:grid-cols-2 lg:gap-6">
+          {calendar.status === 'success' ? (
+            <TasksByStatus data={calendar.data} />
+          ) : (
+            <SectionFeedback
+              label="tasks by status"
+              loading={calendar.status === 'loading'}
+              retry={calendar.status === 'error' ? calendar.retry : undefined}
+            />
+          )}
+          {projects.status === 'success' ? (
+            <AllProjectsStatistics projects={projects.data} />
+          ) : (
+            <SectionFeedback
+              label="project statistics"
+              loading={projects.status === 'loading'}
+              retry={projects.status === 'error' ? projects.retry : undefined}
+            />
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
 
 export function MyStatisticsScreen() {
   const [filters, setFilters] = useState<StatisticsFilters | null>(null);
@@ -27,12 +104,15 @@ export function MyStatisticsScreen() {
         </p>
       </header>
       {filters ? (
-        <StatisticsFiltersToolbar
-          filters={filters}
-          onChange={(next) =>
-            setFilters((current) => (current ? updateStatisticsFilters(current, next) : current))
-          }
-        />
+        <>
+          <StatisticsFiltersToolbar
+            filters={filters}
+            onChange={(next) =>
+              setFilters((current) => (current ? updateStatisticsFilters(current, next) : current))
+            }
+          />
+          <StatisticsContent filters={filters} />
+        </>
       ) : (
         <p role="status" className="text-foreground-muted text-sm">
           Preparing filters...
