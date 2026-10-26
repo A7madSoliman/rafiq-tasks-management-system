@@ -3,8 +3,12 @@ import CompletedIcon from '@/assets/icons/validation-passed.svg';
 import { cn } from '@/lib/cn';
 import type { CreatedTask } from '../schemas/created-task-schema';
 import { TASK_STATUSES, type TaskStatus } from '../constants/task-statuses';
+import type { Ref } from 'react';
 
 type TaskBoardCardProps = {
+  activationRef?: Ref<HTMLButtonElement>;
+  dragRef?: Ref<HTMLElement>;
+  dragging?: boolean;
   task: CreatedTask;
   assigneeName?: string | null;
   mobile?: boolean;
@@ -51,6 +55,9 @@ function formatDueDate(value: string): string {
 }
 
 export function TaskBoardCard({
+  activationRef,
+  dragRef,
+  dragging = false,
   task,
   assigneeName,
   mobile = false,
@@ -89,10 +96,12 @@ export function TaskBoardCard({
 
     return (
       <article
+        ref={dragRef}
         className={cn(
           'relative flex min-h-[122px] min-w-0 flex-col gap-3 rounded-md border p-4',
           'shadow-[0_2px_4px_rgba(0,0,0,0.02)]',
           isBlocked ? 'border-error/10 bg-error-container/20' : 'border-outline/10 bg-surface',
+          dragging && 'opacity-40',
         )}
       >
         <div className="flex min-h-5 items-center justify-between gap-2">
@@ -161,8 +170,10 @@ export function TaskBoardCard({
         )}
 
         <button
+          ref={activationRef}
           type="button"
           onClick={() => onTaskClick(task.id)}
+          aria-keyshortcuts={activationRef ? 'Enter Space' : undefined}
           aria-label={`View details for ${task.task_id ? `${task.task_id}: ` : ''}${task.title}`}
           className="focus-visible:outline-primary absolute inset-0 z-10 cursor-pointer rounded-md focus-visible:outline-2 focus-visible:outline-offset-2"
         />
@@ -171,11 +182,13 @@ export function TaskBoardCard({
   }
   return (
     <article
+      ref={dragRef}
       className={cn(
         'relative flex w-full flex-col rounded-md border p-4',
         'shadow-[0_2px_4px_rgba(0,0,0,0.02)]',
         isDone ? 'min-h-[113px] gap-4' : 'min-h-[113px] gap-2',
         isBlocked ? 'border-error/10 bg-error-container/20' : 'border-outline/10 bg-surface',
+        dragging && 'opacity-40',
       )}
     >
       <h3
@@ -231,8 +244,10 @@ export function TaskBoardCard({
       )}
 
       <button
+        ref={activationRef}
         type="button"
         onClick={() => onTaskClick(task.id)}
+        aria-keyshortcuts={activationRef ? 'Enter Space' : undefined}
         aria-label={`View details for ${task.task_id ? `${task.task_id}: ` : ''}${task.title}`}
         className="focus-visible:outline-primary absolute inset-0 z-10 cursor-pointer rounded-md focus-visible:outline-2 focus-visible:outline-offset-2"
       />

@@ -7,6 +7,7 @@ import {
 } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CreatedTask } from '../schemas/created-task-schema';
+import type { TaskMoveIntent } from '../utils/task-board-move-intent';
 import { CreateTaskDialog } from './create-task-dialog';
 import { TaskDetailsDialog } from './task-details-dialog';
 import { TaskBoardDesktopHeader } from './task-board-desktop-header';
@@ -17,6 +18,9 @@ const state = vi.hoisted(() => ({
   index: 0,
   desktop: true,
   retryMembers: vi.fn(),
+  confirmMove: null as null | ((intent: TaskMoveIntent) => void),
+  uncertainMove: null as null | ((intent: TaskMoveIntent) => void),
+  moveRevisions: 0,
 }));
 vi.mock('react', async (importOriginal) => ({
   ...(await importOriginal<typeof import('react')>()),
@@ -40,6 +44,34 @@ vi.mock('@/features/projects/hooks/use-project-members', () => ({
 }));
 vi.mock('../hooks/use-debounced-value', () => ({ useDebouncedValue: (value: string) => value }));
 vi.mock('../hooks/use-is-desktop', () => ({ useIsDesktop: () => state.desktop }));
+vi.mock('../hooks/use-board-task-move', () => ({
+  useBoardTaskMove: (
+    _projectId: string,
+    _mobile: boolean,
+    onConfirmed: (intent: TaskMoveIntent) => void,
+    onUncertain: (intent: TaskMoveIntent) => void,
+  ) => {
+    state.confirmMove = onConfirmed;
+    state.uncertainMove = onUncertain;
+    return {
+      move: null,
+      moving: false,
+      mobileRevision: state.moveRevisions,
+      revisions: {
+        TO_DO: state.moveRevisions,
+        IN_PROGRESS: 0,
+        BLOCKED: 0,
+        IN_REVIEW: 0,
+        READY_FOR_QA: 0,
+        REOPENED: 0,
+        READY_FOR_PRODUCTION: 0,
+        DONE: state.moveRevisions,
+      },
+      start: vi.fn(),
+      acknowledge: vi.fn(),
+    };
+  },
+}));
 vi.mock('./create-task-dialog', () => ({ CreateTaskDialog: () => null }));
 vi.mock('./task-details-dialog', () => ({ TaskDetailsDialog: () => null }));
 vi.mock('./task-board-column', () => ({ TaskBoardColumn: () => null }));
@@ -83,6 +115,9 @@ describe('Board confirmed-update integration', () => {
     state.slots = [];
     state.index = 0;
     state.desktop = true;
+    state.confirmMove = null;
+    state.uncertainMove = null;
+    state.moveRevisions = 0;
     vi.clearAllMocks();
   });
 
@@ -148,5 +183,35 @@ describe('Board confirmed-update integration', () => {
       elements(renderBoard()).filter((item) => 'refreshRevision' in item.props)[0].props
         .refreshRevision,
     ).toBe(0);
+  });
+
+  it('reconciles a locally created task while refreshing only the two affected status queries', () => {
+    const tree = renderBoard();
+    propsOf<ComponentProps<typeof CreateTaskDialog>>(tree, CreateTaskDialog).onCreated?.(task);
+    renderBoard();
+    state.confirmMove?.({
+      projectId: 'project',
+      taskId: task.id,
+      sourceStatus: 'TO_DO',
+      destinationStatus: 'DONE',
+    });
+    state.moveRevisions = 1;
+    const queries = elements(renderBoard()).filter((item) => 'refreshRevision' in item.props);
+    expect(queries.map((query) => query.props.refreshRevision)).toEqual([1, 0, 0, 0, 0, 0, 0, 1]);
+    expect((queries[7].props.localTasks as CreatedTask[])[0].status).toBe('DONE');
+  });
+
+  it('removes a local copy when a write outcome is uncertain so refreshed server pages own the card', () => {
+    const tree = renderBoard();
+    propsOf<ComponentProps<typeof CreateTaskDialog>>(tree, CreateTaskDialog).onCreated?.(task);
+    renderBoard();
+    state.uncertainMove?.({
+      projectId: 'project',
+      taskId: task.id,
+      sourceStatus: 'TO_DO',
+      destinationStatus: 'DONE',
+    });
+    const queries = elements(renderBoard()).filter((item) => 'refreshRevision' in item.props);
+    expect(queries[0].props.localTasks).toEqual([]);
   });
 });

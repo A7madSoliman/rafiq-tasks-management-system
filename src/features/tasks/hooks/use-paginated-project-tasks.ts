@@ -18,6 +18,7 @@ type LoadStatus = 'loading' | 'success' | 'error';
 type RequestMode = 'initial' | 'more';
 
 type PaginationState = {
+  canEdit: boolean | null;
   queryKey: string;
   tasks: CreatedTask[];
   totalCount: number | null;
@@ -31,6 +32,7 @@ const PAGE_SIZE = 10;
 
 function createInitialState(queryKey: string): PaginationState {
   return {
+    canEdit: null,
     queryKey,
     tasks: [],
     totalCount: null,
@@ -95,6 +97,21 @@ export function usePaginatedProjectTasks(
         if (!isActive()) {
           return;
         }
+
+        const permission = response.headers.get('X-Taskly-Can-Edit');
+        const canEdit =
+          response.ok || response.status === 416
+            ? permission === 'true'
+              ? true
+              : permission === 'false'
+                ? false
+                : null
+            : null;
+        setState((current) =>
+          isCurrentState(current) && current.canEdit !== canEdit
+            ? { ...current, canEdit }
+            : current,
+        );
 
         if (response.status === 401) {
           router.replace('/login');
@@ -173,6 +190,7 @@ export function usePaginatedProjectTasks(
             const merged = mergeTaskPage([], page, 0);
 
             return {
+              canEdit,
               queryKey,
               tasks: merged.tasks,
               totalCount,
@@ -351,6 +369,7 @@ export function usePaginatedProjectTasks(
   }, [requestMore]);
 
   return {
+    canEdit: currentState.status === 'success' ? currentState.canEdit : null,
     tasks: currentState.tasks,
     totalCount: currentState.totalCount ?? 0,
     status: currentState.status,

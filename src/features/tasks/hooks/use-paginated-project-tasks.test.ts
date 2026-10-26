@@ -62,9 +62,12 @@ const task: CreatedTask = {
   due_date: null,
   status: 'TO_DO',
 };
-function page(tasks: CreatedTask[], count: number) {
+function page(tasks: CreatedTask[], count: number, permission: string | null = null) {
   return new Response(JSON.stringify(tasks), {
-    headers: { 'Content-Range': `0-${Math.max(tasks.length - 1, 0)}/${count}` },
+    headers: {
+      'Content-Range': `0-${Math.max(tasks.length - 1, 0)}/${count}`,
+      ...(permission === null ? {} : { 'X-Taskly-Can-Edit': permission }),
+    },
   });
 }
 function PaginatedHookHarness(revision: number, status: TaskStatus | null, search: string) {
@@ -81,6 +84,32 @@ function renderQuery(revision = 0, status: TaskStatus | null = 'TO_DO', search =
 }
 
 describe('task pagination invalidation', () => {
+  it.each([
+    { header: 'true', expected: true },
+    { header: 'false', expected: false },
+    { header: null, expected: null },
+    { header: 'TRUE', expected: null },
+    { header: 'invalid', expected: null },
+  ])('exposes fail-closed permission metadata for $header', async ({ header, expected }) => {
+    vi.mocked(fetch).mockResolvedValueOnce(page([task], 1, header));
+    expect(renderQuery().canEdit).toBeNull();
+    await vi.waitFor(() =>
+      expect(renderQuery()).toMatchObject({ status: 'success', canEdit: expected }),
+    );
+  });
+
+  it('revokes drag permission when later pagination metadata is missing', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(page([task], 2, 'true'))
+      .mockResolvedValueOnce(page([{ ...task, id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc' }], 2));
+    renderQuery();
+    await vi.waitFor(() => expect(renderQuery().canEdit).toBe(true));
+    renderQuery().loadMore();
+    await vi.waitFor(() =>
+      expect(renderQuery()).toMatchObject({ canEdit: null, isLoadingMore: false }),
+    );
+    expect(renderQuery().tasks).toHaveLength(2);
+  });
   beforeEach(() => {
     hooks.slots = [];
     hooks.index = 0;

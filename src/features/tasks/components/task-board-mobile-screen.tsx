@@ -9,9 +9,10 @@ import NoTasksIcon from '@/assets/icons/tasks/no-tasks.svg';
 import { Button } from '@/components/ui/button';
 
 import type { CreatedTask } from '../schemas/created-task-schema';
-import { TaskBoardCard } from './task-board-card';
+import { BoardTaskCard } from './task-board-drag-drop';
 
 type TaskBoardMobileScreenProps = {
+  canMove?: boolean;
   tasks: readonly CreatedTask[];
   assigneeNamesById: ReadonlyMap<string, string>;
   onAddTask: () => void;
@@ -31,6 +32,7 @@ type TaskBoardMobileScreenProps = {
 };
 
 export function TaskBoardMobileScreen({
+  canMove = false,
   tasks,
   assigneeNamesById,
   onAddTask,
@@ -153,7 +155,8 @@ export function TaskBoardMobileScreen({
       {tasks.length > 0 && (
         <div aria-label="Tasks" className="mt-7 flex min-w-0 flex-col gap-3">
           {tasks.map((task) => (
-            <TaskBoardCard
+            <BoardTaskCard
+              canMove={canMove && loadState === 'success'}
               key={task.id}
               task={task}
               mobile
