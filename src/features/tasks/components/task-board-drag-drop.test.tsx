@@ -82,6 +82,7 @@ const source = {
     sourceStatus: task.status,
     canEdit: true,
     mobile: true,
+    task,
   },
 };
 const target = { data: { projectId, status: 'DONE', available: true } };
@@ -177,15 +178,18 @@ describe('Board drag interactions', () => {
       TASK_STATUSES.map((item) => item.value),
     );
     end();
-    expect(onMoveIntent).toHaveBeenCalledExactlyOnceWith({
-      projectId,
-      taskId: task.id,
-      sourceStatus: 'TO_DO',
-      destinationStatus: 'DONE',
-    });
+    expect(onMoveIntent).toHaveBeenCalledExactlyOnceWith(
+      {
+        projectId,
+        taskId: task.id,
+        sourceStatus: 'TO_DO',
+        destinationStatus: 'DONE',
+      },
+      task,
+    );
     const after = render();
     expect(after).not.toContain('Move to status');
-    expect(after).toContain('Task status is unchanged.');
+    expect(after).not.toContain('Moving Login to DONE.');
     expect(state.card.task.status).toBe('TO_DO');
     state.card.onTaskClick(task.id);
     expect(onTaskClick).not.toHaveBeenCalled();

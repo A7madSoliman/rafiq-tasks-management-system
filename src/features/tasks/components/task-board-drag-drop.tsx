@@ -25,6 +25,7 @@ import {
 } from '@dnd-kit/react';
 import { cn } from '@/lib/cn';
 import { TASK_STATUSES, type TaskStatus } from '../constants/task-statuses';
+import { createdTaskSchema, type CreatedTask } from '../schemas/created-task-schema';
 import {
   boardDragSourceSchema,
   boardDropTargetSchema,
@@ -69,7 +70,7 @@ export function TaskBoardDragDrop({
   mobile: boolean;
   searchKey: string;
   disabled: boolean;
-  onMoveIntent?: (intent: TaskMoveIntent) => void;
+  onMoveIntent?: (intent: TaskMoveIntent, task: CreatedTask) => void;
   children: ReactNode;
 }) {
   const [active, setActive] = useState<BoardDragSource | null>(null);
@@ -159,12 +160,17 @@ export function TaskBoardDragDrop({
           });
           setActive(null);
           if (intent) {
-            onMoveIntent?.(intent);
-            setMessage(
-              `Move requested to ${labelFor(intent.destinationStatus)}. Task status is unchanged.`,
-            );
-          } else if (!event.canceled)
-            setMessage('No status change requested. Task status is unchanged.');
+            const task = createdTaskSchema.safeParse(event.operation.source?.data?.task);
+            if (
+              task.success &&
+              task.data.id === intent.taskId &&
+              task.data.project_id === projectId &&
+              task.data.status === intent.sourceStatus
+            ) {
+              onMoveIntent?.(intent, task.data);
+              setMessage(`Moving ${task.data.title} to ${labelFor(intent.destinationStatus)}.`);
+            }
+          } else if (!event.canceled) setMessage('No status change requested.');
           const handle = event.operation.source?.handle;
           if (!disabled && handle instanceof HTMLElement)
             requestAnimationFrame(() => {
@@ -187,7 +193,7 @@ export function TaskBoardDragDrop({
           )}
         </DragOverlay>
         <p role="status" className="text-foreground-muted px-4 text-xs lg:px-8">
-          {message}
+          {disabled || !message.startsWith('Moving ') ? message : ''}
         </p>
       </DragDropProvider>
     </BoardDragContext.Provider>
@@ -229,6 +235,7 @@ function DraggableTaskCard({
       taskId: task.id,
       sourceStatus: task.status,
       title: task.title,
+      task,
       canEdit: true,
       mobile: board.mobile,
     },
