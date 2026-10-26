@@ -33,7 +33,7 @@ import {
   type BoardDragSource,
   type TaskMoveIntent,
 } from '../utils/task-board-move-intent';
-import { boardPointerSensor, BoardKeyboardSensor } from '../utils/task-board-sensors';
+import { boardPointerSensor, boardKeyboardSensor } from '../utils/task-board-sensors';
 import { TaskBoardCard } from './task-board-card';
 
 type BoardDragContextValue = {
@@ -44,7 +44,7 @@ type BoardDragContextValue = {
   canOpenDetails: () => boolean;
 };
 const BoardDragContext = createContext<BoardDragContextValue | null>(null);
-const sensors = [boardPointerSensor, BoardKeyboardSensor];
+const sensors = [boardPointerSensor, boardKeyboardSensor];
 const labelFor = (status: TaskStatus) =>
   TASK_STATUSES.find((item) => item.value === status)?.label ?? status;
 
@@ -83,7 +83,7 @@ export function TaskBoardDragDrop({
       Accessibility.configure({
         screenReaderInstructions: {
           draggable:
-            'Press Space or Enter to pick up a task. Use arrow keys to choose a status, Space or Enter to drop, or Escape to cancel.',
+            'Press Enter to open task details or Space to pick up the task. Use arrow keys to choose a status, Space or Enter to drop, or Escape to cancel.',
         },
         announcements: {
           dragstart({ operation }: DragStartEvent) {
@@ -242,25 +242,7 @@ function DraggableTaskCard({
     disabled: board.disabled,
   });
   return (
-    <TaskBoardCard
-      {...props}
-      dragRef={ref}
-      dragging={isDragSource}
-      moveHandle={
-        <button
-          ref={handleRef}
-          type="button"
-          aria-label={`Move task ${task.title}`}
-          onClick={(event) => {
-            event.preventDefault();
-            event.stopPropagation();
-          }}
-          className="text-primary bg-surface-low focus-visible:outline-primary flex min-h-11 min-w-11 cursor-grab touch-none items-center justify-center rounded-sm px-1 text-xs font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 active:cursor-grabbing"
-        >
-          Move
-        </button>
-      }
-    />
+    <TaskBoardCard {...props} dragRef={ref} dragging={isDragSource} activationRef={handleRef} />
   );
 }
 

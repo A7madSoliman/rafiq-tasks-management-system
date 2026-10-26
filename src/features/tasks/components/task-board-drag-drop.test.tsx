@@ -1,4 +1,4 @@
-import { type ComponentProps, type ReactElement } from 'react';
+import { type ComponentProps } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DragDropProvider } from '@dnd-kit/react';
@@ -17,6 +17,7 @@ const state = vi.hoisted(() => ({
   effects: [] as (() => void | (() => void))[],
   stop: vi.fn(),
   draggable: vi.fn(),
+  activationRef: vi.fn(),
 }));
 vi.mock('react', async (original) => ({
   ...(await original<typeof import('react')>()),
@@ -43,7 +44,7 @@ vi.mock('@dnd-kit/react', () => ({
   useDragDropManager: () => ({ actions: { stop: state.stop }, dragOperation: {} }),
   useDraggable: (input: unknown) => {
     state.draggable(input);
-    return { ref: vi.fn(), handleRef: vi.fn(), isDragSource: false };
+    return { ref: vi.fn(), handleRef: state.activationRef, isDragSource: false };
   },
   useDroppable: (input: (typeof state.targets)[number]) => {
     state.targets.push(input);
@@ -101,7 +102,12 @@ function render(overrides: Partial<ComponentProps<typeof TaskBoardDragDrop>> = {
       {...overrides}
     >
       {overrides.children ?? (
-        <BoardTaskCard task={task} onTaskClick={onTaskClick} canMove={canMove} mobile />
+        <BoardTaskCard
+          task={task}
+          onTaskClick={onTaskClick}
+          canMove={canMove}
+          mobile={overrides.mobile ?? true}
+        />
       )}
     </TaskBoardDragDrop>,
   );
@@ -127,32 +133,31 @@ describe('Board drag interactions', () => {
     vi.stubGlobal('HTMLElement', class {});
   });
 
-  it('renders a separate accessible Move button and preserves the details button', () => {
-    const html = render();
-    expect(html).toContain('aria-label="Move task Login"');
-    expect(html).toContain('min-h-11 min-w-11');
-    expect(html).toContain('touch-none');
-    expect(html.match(/<button\b/g)).toHaveLength(2);
-    expect(html).not.toMatch(/<button\b[^>]*>(?:(?!<\/button>)[\s\S])*<button\b/);
-    const handle = state.card.moveHandle as ReactElement<{
-      onClick: (event: { preventDefault: () => void; stopPropagation: () => void }) => void;
-    }>;
-    const event = { preventDefault: vi.fn(), stopPropagation: vi.fn() };
-    handle.props.onClick(event);
-    expect(event.stopPropagation).toHaveBeenCalledOnce();
-    expect(onTaskClick).not.toHaveBeenCalled();
-    state.card.onTaskClick(task.id);
-    expect(onTaskClick).toHaveBeenCalledWith(task.id);
-    start();
-    state.card.onTaskClick(task.id);
-    expect(onTaskClick).toHaveBeenCalledOnce();
-  });
+  it.each([true, false])(
+    'uses the full-card details button as the activator (Mobile: %s)',
+    (mobile) => {
+      const html = render({ mobile });
+      expect(html).not.toContain('Move task');
+      expect(html).toContain('aria-keyshortcuts="Enter Space"');
+      expect(html).not.toContain('touch-none');
+      expect(html.match(/<button\b/g)).toHaveLength(1);
+      expect(html).not.toMatch(/<button\b[^>]*>(?:(?!<\/button>)[\s\S])*<button\b/);
+      expect(state.card.activationRef).toBe(state.activationRef);
+      state.card.onTaskClick(task.id);
+      expect(onTaskClick).toHaveBeenCalledWith(task.id);
+      start();
+      state.card.onTaskClick(task.id);
+      expect(onTaskClick).toHaveBeenCalledOnce();
+    },
+  );
 
   it.each([false, true])(
-    'hides Move controls for Viewer or disabled board (disabled: %s)',
+    'leaves only the details action for Viewer or disabled board (disabled: %s)',
     (disabled) => {
       const html = render({ disabled }, disabled);
       expect(html).not.toContain('Move task');
+      expect(html).not.toContain('aria-keyshortcuts');
+      expect(state.card.activationRef).toBeUndefined();
       expect(state.draggable).not.toHaveBeenCalled();
     },
   );

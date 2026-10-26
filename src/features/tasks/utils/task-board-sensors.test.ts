@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { PointerActivationConstraints } from '@dnd-kit/dom';
-import { BoardKeyboardSensor, boardPointerSensor } from './task-board-sensors';
+import { BoardKeyboardSensor, boardKeyboardSensor, boardPointerSensor } from './task-board-sensors';
 
 const projectId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 class TestKeyboardSensor extends BoardKeyboardSensor {
@@ -10,6 +10,14 @@ class TestKeyboardSensor extends BoardKeyboardSensor {
 }
 
 describe('Board sensors', () => {
+  it('reserves Enter for details when idle and retains drop and cancel keys while dragging', () => {
+    expect(boardKeyboardSensor.plugin).toBe(BoardKeyboardSensor);
+    expect(boardKeyboardSensor.options?.keyboardCodes).toMatchObject({
+      start: ['Space'],
+      end: ['Space', 'Enter', 'Tab'],
+      cancel: ['Escape'],
+    });
+  });
   it.each(['mouse', 'pen', 'touch'])(
     'uses the approved %s activation constraint',
     (pointerType) => {

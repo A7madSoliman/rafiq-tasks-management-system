@@ -66,3 +66,15 @@ export class BoardKeyboardSensor extends KeyboardSensor {
     super.cleanup();
   }
 }
+
+// The inherited configure() factory binds the base KeyboardSensor class.
+// Keep our status-target navigation by supplying the subclass explicitly.
+export const boardKeyboardSensor = {
+  plugin: BoardKeyboardSensor,
+  options: {
+    keyboardCodes: {
+      ...KeyboardSensor.defaults.keyboardCodes,
+      start: ['Space'],
+    },
+  },
+};

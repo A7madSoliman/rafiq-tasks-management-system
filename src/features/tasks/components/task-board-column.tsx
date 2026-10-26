@@ -148,8 +148,10 @@ export function TaskBoardColumn({
           ref={ref}
           aria-label={`${status.label} tasks`}
           className={cn(
-            'flex w-full min-w-0 flex-col gap-4 rounded-md lg:h-full lg:w-72 lg:shrink-0',
-            highlighted && 'bg-surface-nested ring-primary ring-2',
+            'relative isolate flex w-full min-w-0 flex-col gap-4 rounded-md lg:h-full lg:w-72 lg:shrink-0',
+            // Paint inside the scroll boundary and above the cards' z-10 buttons.
+            highlighted &&
+              'bg-surface-nested after:ring-primary after:pointer-events-none after:absolute after:inset-0 after:z-20 after:rounded-[inherit] after:ring-2 after:ring-inset',
           )}
         >
           <header className="flex h-[19px] shrink-0 items-center px-1">

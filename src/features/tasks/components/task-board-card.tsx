@@ -3,10 +3,10 @@ import CompletedIcon from '@/assets/icons/validation-passed.svg';
 import { cn } from '@/lib/cn';
 import type { CreatedTask } from '../schemas/created-task-schema';
 import { TASK_STATUSES, type TaskStatus } from '../constants/task-statuses';
-import type { ReactNode, Ref } from 'react';
+import type { Ref } from 'react';
 
 type TaskBoardCardProps = {
-  moveHandle?: ReactNode;
+  activationRef?: Ref<HTMLButtonElement>;
   dragRef?: Ref<HTMLElement>;
   dragging?: boolean;
   task: CreatedTask;
@@ -55,7 +55,7 @@ function formatDueDate(value: string): string {
 }
 
 export function TaskBoardCard({
-  moveHandle,
+  activationRef,
   dragRef,
   dragging = false,
   task,
@@ -104,13 +104,7 @@ export function TaskBoardCard({
           dragging && 'opacity-40',
         )}
       >
-        {moveHandle && <div className="absolute top-2 right-2 z-20">{moveHandle}</div>}
-        <div
-          className={cn(
-            'flex min-h-5 items-center justify-between gap-2',
-            Boolean(moveHandle) && 'min-h-11 pr-12',
-          )}
-        >
+        <div className="flex min-h-5 items-center justify-between gap-2">
           {task.task_id ? (
             <span className="text-task-status-label min-w-0 truncate text-[10px] leading-4 font-medium uppercase">
               {task.task_id}
@@ -176,8 +170,10 @@ export function TaskBoardCard({
         )}
 
         <button
+          ref={activationRef}
           type="button"
           onClick={() => onTaskClick(task.id)}
+          aria-keyshortcuts={activationRef ? 'Enter Space' : undefined}
           aria-label={`View details for ${task.task_id ? `${task.task_id}: ` : ''}${task.title}`}
           className="focus-visible:outline-primary absolute inset-0 z-10 cursor-pointer rounded-md focus-visible:outline-2 focus-visible:outline-offset-2"
         />
@@ -195,13 +191,11 @@ export function TaskBoardCard({
         dragging && 'opacity-40',
       )}
     >
-      {moveHandle && <div className="absolute top-2 right-2 z-20">{moveHandle}</div>}
       <h3
         className={cn(
           'text-foreground line-clamp-2 break-words',
           'text-sm leading-[19.25px] font-medium',
           isDone && 'text-foreground/60 decoration-foreground/50 line-through',
-          Boolean(moveHandle) && 'min-h-11 pr-12',
         )}
       >
         {task.title}
@@ -250,8 +244,10 @@ export function TaskBoardCard({
       )}
 
       <button
+        ref={activationRef}
         type="button"
         onClick={() => onTaskClick(task.id)}
+        aria-keyshortcuts={activationRef ? 'Enter Space' : undefined}
         aria-label={`View details for ${task.task_id ? `${task.task_id}: ` : ''}${task.title}`}
         className="focus-visible:outline-primary absolute inset-0 z-10 cursor-pointer rounded-md focus-visible:outline-2 focus-visible:outline-offset-2"
       />
