@@ -1,3 +1,5 @@
+import { redirect } from 'next/navigation';
+
 export default function StatisticsPage() {
-  return <div className="">Statistics</div>;
+  redirect('/my-statistics');
 }

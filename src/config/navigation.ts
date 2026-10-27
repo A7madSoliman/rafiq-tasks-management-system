@@ -13,7 +13,7 @@ export const mainNavigation = [
   },
   {
     label: 'My Statistics',
-    href: '/statistics',
+    href: '/my-statistics',
     icon: StatisticsIcon,
   },
 ] as const;
