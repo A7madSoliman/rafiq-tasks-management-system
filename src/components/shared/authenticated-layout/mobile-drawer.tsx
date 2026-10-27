@@ -10,7 +10,7 @@ import { mainNavigation } from '@/config/navigation';
 import { cn } from '@/lib/cn';
 
 import { ActiveProjectNavigation } from './active-project-navigation';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 type MobileDrawerProps = {
   isOpen: boolean;
@@ -21,33 +21,89 @@ type MobileDrawerProps = {
 
 export function MobileDrawer({ isOpen, onClose, onLogout, isLoggingOut }: MobileDrawerProps) {
   const pathname = usePathname();
+  const dialogRef = useRef<HTMLElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (!isOpen) {
       return;
     }
 
+    const previousFocus =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    closeButtonRef.current?.focus();
+
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
-        onClose();
+        event.preventDefault();
+        onCloseRef.current();
+        return;
+      }
+
+      if (event.key !== 'Tab' || !dialogRef.current) return;
+
+      const dialog = dialogRef.current;
+      const elements = Array.from(
+        dialog.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((element) => element.tabIndex >= 0 && element.getClientRects().length > 0);
+      const first = elements[0];
+      const last = elements[elements.length - 1];
+
+      if (!first || !last) {
+        event.preventDefault();
+        dialog.focus();
+      } else if (!dialog.contains(document.activeElement) || document.activeElement === dialog) {
+        event.preventDefault();
+        (event.shiftKey ? last : first).focus();
+      } else if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
       }
     }
 
-    document.addEventListener('keydown', handleKeyDown);
+    function handleFocusIn(event: FocusEvent) {
+      if (event.target instanceof Node && !dialogRef.current?.contains(event.target)) {
+        dialogRef.current?.focus();
+      }
+    }
+
+    const desktop = window.matchMedia('(min-width: 1024px)');
+    const closeOnDesktop = () => {
+      if (desktop.matches) onCloseRef.current();
+    };
+    desktop.addEventListener('change', closeOnDesktop);
+    closeOnDesktop();
+    document.addEventListener('keydown', handleKeyDown, true);
+    document.addEventListener('focusin', handleFocusIn, true);
 
     return () => {
-      document.removeEventListener('keydown', handleKeyDown);
+      desktop.removeEventListener('change', closeOnDesktop);
+      document.removeEventListener('keydown', handleKeyDown, true);
+      document.removeEventListener('focusin', handleFocusIn, true);
+      if (previousFocus?.isConnected) previousFocus.focus();
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   return (
     <div
       className={cn('fixed inset-0 z-50 lg:hidden', !isOpen && 'pointer-events-none')}
       aria-hidden={!isOpen}
+      inert={!isOpen}
     >
       <button
         type="button"
         aria-label="Close navigation menu"
+        tabIndex={-1}
         onClick={onClose}
         className={cn(
           'absolute inset-0 bg-[rgba(4,27,60,0.4)] backdrop-blur-[2px]',
@@ -57,6 +113,10 @@ export function MobileDrawer({ isOpen, onClose, onLogout, isLoggingOut }: Mobile
       />
 
       <aside
+        ref={dialogRef}
+        role="dialog"
+        aria-modal={isOpen || undefined}
+        tabIndex={-1}
         aria-label="Mobile navigation"
         className={cn(
           'bg-surface-low absolute inset-y-0 left-0 flex w-full max-w-[390px] flex-col p-4 shadow-2xl',
@@ -74,6 +134,7 @@ export function MobileDrawer({ isOpen, onClose, onLogout, isLoggingOut }: Mobile
           </div>
 
           <button
+            ref={closeButtonRef}
             type="button"
             onClick={onClose}
             aria-label="Close navigation menu"

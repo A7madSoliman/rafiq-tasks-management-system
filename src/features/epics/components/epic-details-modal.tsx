@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import CloseIcon from '@/assets/icons/navigation/close.svg';
-import CopyLinkIcon from '@/assets/icons/epics/details/copy-link.svg';
 import EpicIcon from '@/assets/icons/epics/details/epic.svg';
 import type { ProjectEpic } from '../types/project-epic';
 import { EpicDetailsContent } from './epic-details-content';
@@ -61,6 +60,7 @@ function EpicDetailsModalContent({
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLElement>(null);
   const confirmRef = useRef<HTMLDialogElement>(null);
   const skipAutoSaveRef = useRef(false);
   const savingRef = useRef(false);
@@ -218,24 +218,69 @@ function EpicDetailsModalContent({
 
     return () => {
       document.body.style.overflow = previousOverflow;
-      previousFocus?.focus();
+      if (previousFocus?.isConnected) previousFocus.focus();
     };
   }, []);
 
   useEffect(() => {
-    function handleEscape(event: KeyboardEvent) {
-      if (event.key !== 'Escape' || confirmOpen || isTaskDetailsOpen) {
+    function isInactive() {
+      return confirmOpen || confirmRef.current?.open || isTaskDetailsOpen;
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (isInactive()) {
         return;
       }
 
-      event.preventDefault();
-      requestClose();
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        requestClose();
+        return;
+      }
+
+      if (event.key !== 'Tab' || !dialogRef.current) return;
+
+      const dialog = dialogRef.current;
+      const elements = Array.from(
+        dialog.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((element) => element.tabIndex >= 0 && element.getClientRects().length > 0);
+      const first = elements[0];
+      const last = elements[elements.length - 1];
+
+      if (!first || !last) {
+        event.preventDefault();
+        dialog.focus();
+      } else if (!dialog.contains(document.activeElement) || document.activeElement === dialog) {
+        event.preventDefault();
+        (event.shiftKey ? last : first).focus();
+      } else if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     }
 
-    document.addEventListener('keydown', handleEscape);
+    function handleFocusIn(event: FocusEvent) {
+      if (
+        !isInactive() &&
+        event.target instanceof Node &&
+        dialogRef.current &&
+        !dialogRef.current.contains(event.target)
+      ) {
+        dialogRef.current.focus();
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown, true);
+    document.addEventListener('focusin', handleFocusIn, true);
 
     return () => {
-      document.removeEventListener('keydown', handleEscape);
+      document.removeEventListener('keydown', handleKeyDown, true);
+      document.removeEventListener('focusin', handleFocusIn, true);
     };
   });
 
@@ -256,6 +301,8 @@ function EpicDetailsModalContent({
       <div className="absolute inset-0 bg-black/40" aria-hidden="true" />
 
       <section
+        ref={dialogRef}
+        tabIndex={-1}
         role="dialog"
         aria-label="Epic details"
         inert={isTaskDetailsOpen}
@@ -286,11 +333,6 @@ function EpicDetailsModalContent({
               </div>
 
               <div className="flex shrink-0 items-center gap-3">
-                <div className="text-foreground-secondary flex items-center gap-1 rounded-xs p-1.5 text-[11px] leading-4 font-medium md:gap-2 md:px-3 md:py-1.5 md:text-sm md:leading-5">
-                  <CopyLinkIcon aria-hidden="true" />
-                  <span>Copy link</span>
-                </div>
-
                 <button
                   ref={closeButtonRef}
                   type="button"
