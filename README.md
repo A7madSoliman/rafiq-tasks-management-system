@@ -1,324 +1,143 @@
-# Shared Components
-
-## Overview
-
-This document identifies reusable UI components in Taskly after reviewing the currently implemented application screens and the available Figma designs.
-
-The review covered:
-
-- Login
-- Sign Up
-- Projects
-  - Loading
-  - Empty
-  - Error
-  - Project list
-- Add Project
-  - Desktop
-  - Mobile
-  - Validation/error states
-- Edit Project design
-- Authenticated desktop and mobile application shell
-- Placeholder protected routes such as Epics, Tasks, Members, Details, and Statistics
-
-The goal is to document components whose **purpose and behavior** are reusable across multiple screens.
-
-Visual similarity alone is not considered enough reason to make a component shared.
-
----
-
-## Shared Components
-
-| #   | Component                 | Description                                                                                                           | Used In                                                                         | Screenshot                                                                                                                                                                                                                                             |
-| --- | ------------------------- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 1   | Navbar                    | Top navigation for authenticated pages, including mobile menu access and authenticated user information               | All authenticated pages                                                         | [Desktop](https://www.figma.com/design/JKBfMPiHdHJVZmBa1Cttpo/Taskly--Tasks-Management---Copy-?node-id=44-2226&m=dev) / [Mobile](https://www.figma.com/design/JKBfMPiHdHJVZmBa1Cttpo/Taskly--Tasks-Management---Copy-?node-id=44-2461&m=dev)           |
-| 2   | Authenticated Shell       | Shared responsive layout that composes desktop and mobile navigation around protected page content                    | All authenticated pages                                                         | [Desktop](https://www.figma.com/design/JKBfMPiHdHJVZmBa1Cttpo/Taskly--Tasks-Management---Copy-?node-id=44-2226&m=dev) / [Mobile](https://www.figma.com/design/JKBfMPiHdHJVZmBa1Cttpo/Taskly--Tasks-Management---Copy-?node-id=44-2461&m=dev)           |
-| 3   | Desktop Sidebar           | Main desktop navigation with primary routes, active-project navigation, collapse behavior, and logout action          | All authenticated desktop pages                                                 | [Screenshot](https://www.figma.com/design/JKBfMPiHdHJVZmBa1Cttpo/Taskly--Tasks-Management---Copy-?node-id=44-2226&m=dev)                                                                                                                               |
-| 4   | Mobile Navigation         | Mobile drawer and fixed bottom navigation used to access the authenticated application sections                       | All authenticated mobile pages                                                  | [Screenshot](https://www.figma.com/design/JKBfMPiHdHJVZmBa1Cttpo/Taskly--Tasks-Management---Copy-?node-id=44-2461&m=dev)                                                                                                                               |
-| 5   | Button                    | Standard application action control with primary, secondary, and ghost variants                                       | Login, Sign Up, Project error state, Add Project, and other application actions | [Screenshot](https://www.figma.com/design/JKBfMPiHdHJVZmBa1Cttpo/Taskly--Tasks-Management---Copy-?node-id=44-2226&m=dev)                                                                                                                               |
-| 6   | Input                     | Standard text input primitive supporting validation and application design tokens                                     | Login, Sign Up, Add Project, and Edit Project design                            | [Screenshot](https://www.figma.com/design/JKBfMPiHdHJVZmBa1Cttpo/Taskly--Tasks-Management---Copy-?node-id=44-2226&m=dev)                                                                                                                               |
-| 7   | FieldLabel                | Reusable form label with shared typography and invalid-state styling                                                  | Login, Sign Up, Add Project, and Edit Project design                            | [Screenshot](https://www.figma.com/design/JKBfMPiHdHJVZmBa1Cttpo/Taskly--Tasks-Management---Copy-?node-id=44-2226&m=dev)                                                                                                                               |
-| 8   | Textarea                  | Multi-line text control using the same surface, validation, and typography system as other form controls              | Add Project and Edit Project design                                             | [Screenshot](https://www.figma.com/design/JKBfMPiHdHJVZmBa1Cttpo/Taskly--Tasks-Management---Copy-?node-id=82-2099&m=dev)                                                                                                                               |
-| 9   | Active Project Navigation | Navigation group for project-specific areas such as Epics, Tasks, Members, and Details                                | Desktop sidebar, collapsed sidebar popup, and mobile drawer                     | [Desktop](https://www.figma.com/design/JKBfMPiHdHJVZmBa1Cttpo/Taskly--Tasks-Management---Copy-?node-id=44-2226&m=dev) / [Mobile](https://www.figma.com/design/JKBfMPiHdHJVZmBa1Cttpo/Taskly--Tasks-Management---Copy-?node-id=44-2461&m=dev)           |
-| 10  | Project Form Panel        | Reusable project metadata form structure containing title, description, character counter, actions, and form feedback | Add Project and Edit Project design                                             | [Add Project](https://www.figma.com/design/JKBfMPiHdHJVZmBa1Cttpo/Taskly--Tasks-Management---Copy-?node-id=44-2226&m=dev) / [Edit Project](https://www.figma.com/design/JKBfMPiHdHJVZmBa1Cttpo/Taskly--Tasks-Management---Copy-?node-id=82-2099&m=dev) |
-| 11  | Page Header / Breadcrumb  | Desktop page context showing navigation hierarchy and the current page title                                          | Add Project and Edit Project design                                             | [Add Project](https://www.figma.com/design/JKBfMPiHdHJVZmBa1Cttpo/Taskly--Tasks-Management---Copy-?node-id=44-2226&m=dev) / [Edit Project](https://www.figma.com/design/JKBfMPiHdHJVZmBa1Cttpo/Taskly--Tasks-Management---Copy-?node-id=82-2099&m=dev) |
-| 12  | Pro Tip Footer            | Supporting contextual information displayed below project forms                                                       | Add Project and Edit Project design                                             | [Screenshot](https://www.figma.com/design/JKBfMPiHdHJVZmBa1Cttpo/Taskly--Tasks-Management---Copy-?node-id=82-2099&m=dev)                                                                                                                               |
-
----
-
-## Component Details
-
-### Navbar
-
-**Current component**
-
-`src/components/shared/authenticated-layout/navbar.tsx`
-
-The Navbar provides the persistent top-level header for authenticated pages.
-
-It is reusable because its responsibility does not depend on the page content. It handles:
-
-- authenticated user identity
-- user initials
-- job title
-- mobile navigation trigger
-- desktop and mobile responsive behavior
-
-It is composed by the authenticated application shell rather than being implemented separately by individual pages.
-
----
-
-### Authenticated Shell
-
-**Current component**
-
-`src/components/shared/authenticated-layout/authenticated-shell.tsx`
-
-The Authenticated Shell is the shared responsive layout for protected application pages.
-
-It composes:
-
-- Desktop Sidebar
-- Navbar
-- Mobile Drawer
-- page content
-- Mobile Bottom Navigation
-
-It is reusable because authentication-aware application framing and navigation should remain consistent across protected screens rather than being recreated by each page.
-
----
-
-### Desktop Sidebar
-
-**Current component**
-
-`src/components/shared/authenticated-layout/desktop-sidebar.tsx`
-
-The Desktop Sidebar is shared across authenticated desktop pages.
-
-Its responsibilities include:
-
-- primary navigation
-- current route state
-- active-project navigation
-- collapsed and expanded variants
-- logout
-- sidebar collapse behavior
-
-The navigation structure should stay centralized because all protected pages use the same application-level navigation.
-
----
-
-### Mobile Navigation
-
-**Current components**
-
-- `src/components/shared/authenticated-layout/mobile-drawer.tsx`
-- `src/components/shared/authenticated-layout/mobile-bottom-navigation.tsx`
-
-These components provide the mobile equivalent of the desktop navigation system.
-
-The drawer contains the full application navigation and logout action, while the bottom navigation provides persistent access to important project sections.
-
-They are reusable because their behavior belongs to the authenticated application shell rather than to an individual screen.
-
----
-
-### Button
-
-**Current component**
-
-`src/components/ui/button.tsx`
-
-The Button is a shared UI primitive.
-
-Current variants include:
-
-- `primary`
-- `secondary`
-- `ghost`
-
-The component is reused for actions such as authentication submission, retry actions, and project creation.
-
-Individual screens may adjust dimensions or responsive styling through `className`, while the component keeps the common interaction and variant behavior centralized.
-
----
-
-### Input
-
-**Current component**
-
-`src/components/ui/input.tsx`
-
-The Input provides the base implementation for text-based form controls.
-
-It centralizes:
-
-- application surface colors
-- foreground and placeholder colors
-- transparent default border
-- focus behavior
-- `aria-invalid` validation styling
-
-Screen-specific sizing and responsive styles can be passed through `className`.
-
-This allows Login, Sign Up, project forms, and future forms to share the same semantic input foundation without forcing every input to have identical dimensions.
-
----
-
-### FieldLabel
-
-**Current component**
-
-`src/components/ui/field-label.tsx`
-
-FieldLabel provides the common form-label typography and validation behavior.
-
-It supports:
-
-- uppercase form label styling
-- shared tracking and font weight
-- normal state
-- invalid/error state
-
-It is used with multiple form controls rather than being tied to a particular form.
-
----
-
-### Textarea
-
-**Current component**
-
-`src/components/ui/textarea.tsx`
-
-Textarea is the multi-line equivalent of the Input primitive.
-
-It shares the application's:
-
-- surface system
-- foreground colors
-- placeholder styling
-- validation styling
-- focus behavior
-
-The Add Project implementation currently uses it for project descriptions, and the Edit Project design uses the same type of control.
-
-The primitive should remain generic rather than containing project-specific behavior such as the `500` character limit.
-
----
-
-### Active Project Navigation
-
-**Current component**
-
-`src/components/shared/authenticated-layout/active-project-navigation.tsx`
-
-The component represents navigation inside the currently active project.
-
-It supports multiple presentation variants:
-
-- expanded desktop accordion
-- collapsed desktop popup
-- mobile drawer navigation
-
-The shared behavior includes navigation to:
-
-- Epics
-- Tasks
-- Members
-- Details
-
-The visual presentation changes depending on the shell state, but the navigation purpose remains the same.
-
----
-
-### Project Form Panel
-
-**Status**
-
-Recommended reusable component identified from screen review.
-
-The Add Project implementation and Edit Project design contain the same project metadata workflow:
-
-- project title
-- description
-- optional-description indicator
-- character counter
-- validation feedback
-- Back action
-- primary submit action
-- contextual footer
-
-The differences are primarily configuration:
-
-| Add Project            | Edit Project            |
-| ---------------------- | ----------------------- |
-| Initialize New Project | Edit Project            |
-| Empty initial values   | Existing project values |
-| Create Project         | Save Changes            |
-| Create operation       | Update operation        |
-
-This makes the form structure a strong reuse candidate if Edit Project or another project metadata screen is implemented later.
-
-This task is documentation-only, so no extraction or refactoring is performed here.
-
----
-
-### Page Header / Breadcrumb
-
-**Status**
-
-Recommended reusable component identified from screen review.
-
-Desktop project-management screens use a similar page-context pattern:
-
-- breadcrumb navigation
-- current section
-- page title
-
-Examples:
-
-`PROJECTS > ADD NEW PROJECT`
-
-and:
-
-`PROJECTS > PROJECT TITLE > EDIT`
-
-The component would be reusable because the structure and navigation behavior are consistent while the breadcrumb items and title are data-driven.
-
-The mobile designs may use a different presentation, so responsive behavior should remain configurable.
-
----
-
-### Pro Tip Footer
-
-**Status**
-
-Recommended reusable component identified from screen review.
-
-Both Add Project and Edit Project designs contain the same contextual footer:
-
-> **Pro Tip:** You can invite project members and assign epics immediately after the initial creation process.
-
-The content has the same purpose, visual treatment, and placement in both project forms.
-
-If additional form screens use contextual guidance in the future, this pattern could support configurable content rather than being tied specifically to project creation.
-
----
-
-## Existing Application Shell
-
-The shared authenticated shell is already implemented in:
-
-`src/components/shared/authenticated-layout/authenticated-shell.tsx`
-
-It composes the application-level shared components:
+# Taskly
+
+Taskly is a responsive task and project management application for organizing projects, coordinating members, and tracking work from planning through completion. Inspired by workflows found in tools such as ClickUp, it explores a focused set of project management features as a frontend training and portfolio project.
+
+Built with Next.js App Router, React, and TypeScript, the application connects a responsive interface to a Supabase backend through Next.js API routes.
+
+## Key features
+
+- **Account flows:** sign up, log in, remember your session, log out, and recover or reset a password.
+- **Projects:** create and edit project details, browse paginated project cards, and access project-specific workspaces.
+- **Members and invitations:** view project members and roles, send email invitations, and accept invitations through a flow that preserves the destination during login or signup.
+- **Epics:** create and browse epics, edit their details, assign members and deadlines, and view or create associated tasks.
+- **Task creation and editing:** open task details and update titles, descriptions, assignees, due dates, epic associations, and statuses.
+- **Task search:** search project tasks by title with debounced requests and pagination.
+- **Drag and drop:** move tasks between workflow statuses on the desktop board or use mobile touch dragging with status targets. Keyboard controls support picking up, moving, dropping, and canceling a task move.
+- **Workflow visibility:** track eight statuses, from To Do and In Progress through review, QA, and Done, with assignee information on task cards.
+- **My Statistics:** explore task totals, completed and overdue counts, a calendar, status breakdowns, and counts per project. Calendar statistics support date, project, and status filters.
+- **Responsive UI:** desktop sidebar and board layouts adapt to a mobile drawer, bottom navigation, and task list. Loading skeletons, empty states, validation feedback, retry actions, and toast notifications support data-driven flows.
+
+## Technology stack
+
+| Area                 | Technologies                                                              |
+| -------------------- | ------------------------------------------------------------------------- |
+| Application          | Next.js 16 App Router, React 19, TypeScript                               |
+| Styling              | Tailwind CSS 4, CSS design tokens, `tailwind-merge`                       |
+| Backend              | Supabase Auth, PostgREST, and database RPCs, accessed with native `fetch` |
+| Forms and validation | React Hook Form, Zod, `@hookform/resolvers`                               |
+| Interactions         | `@dnd-kit/react`, `@dnd-kit/dom`, Sonner                                  |
+| Quality and assets   | Vitest, ESLint, Prettier, SVGR for SVG React components                   |
+
+## Architecture
 
 ```text
-AuthenticatedShell
-├── DesktopSidebar
-├── Navbar
-├── MobileDrawer
-├── Page Content
-└── MobileBottomNavigation
+Browser -> Next.js server / API boundary -> Supabase
 ```
+
+App Router layouts handle server-side session checks, while Client Components handle forms, dialogs, navigation, and interactive boards. Browser data requests go through same-origin Next.js API routes. Server code reads the Supabase secret and forwards authenticated requests to Supabase; session tokens are stored in HTTP-only cookies.
+
+Features own their components, hooks, schemas, and mapping utilities. React state and custom hooks manage loading, errors, pagination, canceled or stale requests, and mutation feedback. Task status moves use optimistic UI updates followed by server reconciliation. Zod validates forms and API payloads; typed mappers handle other response shapes. Native `fetch` keeps requests explicit without an additional API client or global state library.
+
+```text
+src/
+  app/          # Auth/protected routes, layouts, and API handlers
+  features/     # Auth, projects, epics, tasks, invitations, statistics
+  components/   # UI primitives and shared authenticated shell
+  lib/          # Session/cookie utilities and class-name helper
+  config/       # Shared navigation definitions
+  styles/       # Design tokens
+  assets/       # SVG assets
+tests/          # API regressions and browser focus fixtures
+```
+
+See [shared components](docs/shared-components.md) for the reusable UI structure. The server boundary keeps credentials out of browser code; the database authorization limitations below still apply.
+
+## Getting started
+
+### Prerequisites
+
+- **Node.js 24** is recommended for compatibility with the current application and Vitest tooling.
+- **pnpm 11.23.0**, pinned in [package.json](package.json).
+- A **compatible configured Supabase backend**, including the expected tables, views, RPCs, and authentication settings.
+
+The repository does **not** bundle a complete database schema, migrations, or reproducible Supabase setup. Cloning and starting the frontend alone does not provide a working backend. Account recovery and email invitations also depend on the backend's email and redirect settings.
+
+### Local setup
+
+1. Clone the repository and enter its directory:
+
+   ```sh
+   git clone https://github.com/A7madSoliman/rafiq-tasks-management-system.git
+   cd rafiq-tasks-management-system
+   ```
+
+2. Install the pinned package manager if needed, then install dependencies:
+
+   ```sh
+   npm install --global pnpm@11.23.0
+   pnpm install --frozen-lockfile
+   ```
+
+3. Copy [.env.example](.env.example) to `.env.local` and fill in your backend configuration:
+
+   ```sh
+   cp .env.example .env.local
+   ```
+
+   In PowerShell, use `Copy-Item .env.example .env.local`.
+
+   | Variable              | Purpose                                                                                                           |
+   | --------------------- | ----------------------------------------------------------------------------------------------------------------- |
+   | `SUPABASE_URL`        | URL of the compatible Supabase project.                                                                           |
+   | `SUPABASE_SECRET_KEY` | Supabase secret used only by server-side code. Keep it out of client code, public environment variables, and Git. |
+   | `APP_URL`             | Application origin used to construct invitation links; use `http://localhost:3000` locally.                       |
+
+   Configure Supabase authentication redirects for the local password recovery flow at `http://localhost:3000/reset-password`.
+
+4. Start the development server:
+
+   ```sh
+   pnpm dev
+   ```
+
+5. Open [http://localhost:3000](http://localhost:3000).
+
+### Available scripts
+
+| Command          | Purpose                                                |
+| ---------------- | ------------------------------------------------------ |
+| `pnpm dev`       | Start the Next.js development server.                  |
+| `pnpm build`     | Create the production build.                           |
+| `pnpm start`     | Serve the production build after running `pnpm build`. |
+| `pnpm lint`      | Run ESLint.                                            |
+| `pnpm typecheck` | Run TypeScript without emitting files.                 |
+| `pnpm test`      | Run the Vitest suite once.                             |
+| `pnpm format`    | Format the repository with Prettier.                   |
+
+## Testing and quality
+
+Vitest runs in a Node environment with tests alongside features and under [tests](tests). The suite covers validation and mapping utilities, pagination and search, hook state transitions, task edits and moves, invitation flows, statistics, and API boundaries. API tests use mocked authentication and upstream responses rather than a live Supabase database.
+
+A focused Chromium fixture also tests drawer and Epic dialog focus behavior using real React components and keyboard events. These cases use an installed Chrome, Edge, or Chromium executable, or a path supplied through `TASKLY_BROWSER_PATH`; they are skipped when no supported browser is found. This fixture is separate from full application end-to-end testing.
+
+Run the quality checks with:
+
+```sh
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm build
+```
+
+Manual browser QA remains necessary for full application visuals, real-device touch interactions, email flows, and integration with a configured backend. Automated checks do not establish accessibility certification or production readiness.
+
+## Known limitations
+
+- Taskly is a training and portfolio project.
+- Existing Supabase row-level security (RLS) and `SECURITY DEFINER` authorization limitations require remediation before production or public use with real data. Application-level checks do not replace database authorization.
+- Full backend setup is not bundled with this frontend repository.
+- Overdue statistics follow the existing backend semantics and are independent of the selected date range. Overdue counts can exceed the selected range's total task count.
+
+## Design and credits
+
+The interface follows the [Taskly Figma design reference](https://www.figma.com/design/JKBfMPiHdHJVZmBa1Cttpo/Taskly--Tasks-Management---Copy-). This is a design reference, not a screenshot of the running application. Design authorship and reuse licensing have not been verified.
