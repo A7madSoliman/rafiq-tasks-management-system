@@ -11,23 +11,18 @@ import { useStatisticsData } from '../hooks/use-statistics-data';
 import { StatisticsSummary } from './statistics-summary';
 import { StatisticsCalendar } from './statistics-calendar';
 import { AllProjectsStatistics, TasksByStatus } from './statistics-analytics';
+import {
+  AllProjectsSkeleton,
+  StatisticsCalendarSkeleton,
+  StatisticsSummarySkeleton,
+  TasksByStatusSkeleton,
+} from './statistics-loading-state';
 
-function SectionFeedback({
-  label,
-  retry,
-  loading,
-}: {
-  label: string;
-  retry?: () => void;
-  loading: boolean;
-}) {
+function SectionFeedback({ label, retry }: { label: string; retry?: () => void }) {
   return (
     <div className="bg-surface flex min-h-40 flex-col items-center justify-center gap-3 rounded-md p-6 text-center">
-      <p
-        role={loading ? 'status' : 'alert'}
-        className={loading ? 'text-foreground-muted text-sm' : 'text-error text-sm'}
-      >
-        {loading ? `Loading ${label}...` : `Unable to load ${label}.`}
+      <p role="alert" className="text-error text-sm">
+        Unable to load {label}.
       </p>
       {retry && (
         <button
@@ -51,33 +46,30 @@ export function StatisticsContent({ filters }: { filters: StatisticsFilters }) {
           <StatisticsSummary data={calendar.data} />
           <StatisticsCalendar data={calendar.data} />
         </>
+      ) : calendar.status === 'loading' ? (
+        <>
+          <StatisticsSummarySkeleton />
+          <StatisticsCalendarSkeleton range={filters} />
+        </>
       ) : (
-        <SectionFeedback
-          label="calendar statistics"
-          loading={calendar.status === 'loading'}
-          retry={calendar.status === 'error' ? calendar.retry : undefined}
-        />
+        <SectionFeedback label="calendar statistics" retry={calendar.retry} />
       )}
       <div className="min-w-0">
         <h2 className="text-foreground mb-3 text-sm font-bold lg:sr-only">Task Statistics</h2>
         <div className="grid min-w-0 gap-3 lg:grid-cols-2 lg:gap-6">
           {calendar.status === 'success' ? (
             <TasksByStatus data={calendar.data} />
+          ) : calendar.status === 'loading' ? (
+            <TasksByStatusSkeleton />
           ) : (
-            <SectionFeedback
-              label="tasks by status"
-              loading={calendar.status === 'loading'}
-              retry={calendar.status === 'error' ? calendar.retry : undefined}
-            />
+            <SectionFeedback label="tasks by status" retry={calendar.retry} />
           )}
           {projects.status === 'success' ? (
             <AllProjectsStatistics projects={projects.data} />
+          ) : projects.status === 'loading' ? (
+            <AllProjectsSkeleton />
           ) : (
-            <SectionFeedback
-              label="project statistics"
-              loading={projects.status === 'loading'}
-              retry={projects.status === 'error' ? projects.retry : undefined}
-            />
+            <SectionFeedback label="project statistics" retry={projects.retry} />
           )}
         </div>
       </div>
