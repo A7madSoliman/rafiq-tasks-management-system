@@ -14,6 +14,9 @@ import { AllProjectsStatistics, TasksByStatus } from './statistics-analytics';
 import {
   AllProjectsSkeleton,
   StatisticsCalendarSkeleton,
+  StatisticsHeaderSkeleton,
+  StatisticsInitialLoadingState,
+  StatisticsSkeleton,
   StatisticsSummarySkeleton,
   TasksByStatusSkeleton,
 } from './statistics-loading-state';
@@ -37,8 +40,17 @@ function SectionFeedback({ label, retry }: { label: string; retry?: () => void }
   );
 }
 
-export function StatisticsContent({ filters }: { filters: StatisticsFilters }) {
+export function StatisticsContent({
+  filters,
+  onInitialSettled,
+}: {
+  filters: StatisticsFilters;
+  onInitialSettled?: (settled: boolean) => void;
+}) {
   const { calendar, projects } = useStatisticsData(filters);
+  useEffect(() => {
+    if (calendar.status !== 'loading' && projects.status !== 'loading') onInitialSettled?.(true);
+  }, [calendar.status, projects.status, onInitialSettled]);
   return (
     <>
       {calendar.status === 'success' ? (
@@ -55,7 +67,14 @@ export function StatisticsContent({ filters }: { filters: StatisticsFilters }) {
         <SectionFeedback label="calendar statistics" retry={calendar.retry} />
       )}
       <div className="min-w-0">
-        <h2 className="text-foreground mb-3 text-sm font-bold lg:sr-only">Task Statistics</h2>
+        {calendar.status === 'loading' && projects.status === 'loading' ? (
+          <>
+            <h2 className="sr-only">Task Statistics</h2>
+            <StatisticsSkeleton className="mb-3 h-5 w-28 rounded-xs lg:hidden" />
+          </>
+        ) : (
+          <h2 className="text-foreground mb-3 text-sm font-bold lg:sr-only">Task Statistics</h2>
+        )}
         <div className="grid min-w-0 gap-3 lg:grid-cols-2 lg:gap-6">
           {calendar.status === 'success' ? (
             <TasksByStatus data={calendar.data} />
@@ -79,6 +98,7 @@ export function StatisticsContent({ filters }: { filters: StatisticsFilters }) {
 
 export function MyStatisticsScreen() {
   const [filters, setFilters] = useState<StatisticsFilters | null>(null);
+  const [initialSettled, setInitialSettled] = useState(false);
   useEffect(() => {
     // The server's timezone must not decide the user's local week or cause hydration mismatches.
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -87,14 +107,18 @@ export function MyStatisticsScreen() {
 
   return (
     <div className="mx-auto flex w-full max-w-[1280px] min-w-0 flex-col gap-6 p-4 lg:gap-8 lg:p-8">
-      <header className="sr-only lg:not-sr-only">
-        <h1 className="text-foreground text-[30px] leading-9 font-bold tracking-[-0.75px]">
-          Weekly Planner
-        </h1>
-        <p className="text-foreground-secondary text-base leading-6">
-          Manage your deadlines and track team velocity.
-        </p>
-      </header>
+      {initialSettled ? (
+        <header className="sr-only lg:not-sr-only">
+          <h1 className="text-foreground text-[30px] leading-9 font-bold tracking-[-0.75px]">
+            Weekly Planner
+          </h1>
+          <p className="text-foreground-secondary text-base leading-6">
+            Manage your deadlines and track team velocity.
+          </p>
+        </header>
+      ) : (
+        <StatisticsHeaderSkeleton />
+      )}
       {filters ? (
         <>
           <StatisticsFiltersToolbar
@@ -103,12 +127,13 @@ export function MyStatisticsScreen() {
               setFilters((current) => (current ? updateStatisticsFilters(current, next) : current))
             }
           />
-          <StatisticsContent filters={filters} />
+          <StatisticsContent
+            filters={filters}
+            onInitialSettled={initialSettled ? undefined : setInitialSettled}
+          />
         </>
       ) : (
-        <p role="status" className="text-foreground-muted text-sm">
-          Preparing filters...
-        </p>
+        <StatisticsInitialLoadingState />
       )}
     </div>
   );

@@ -14,13 +14,19 @@ import { TASK_STATUSES } from '@/features/tasks/constants/task-statuses';
 import { initialStatisticsFilters } from '../utils/statistics-filters';
 import { StatisticsDateRange, RangeCalendar } from './statistics-date-range';
 import { StatisticsFiltersToolbar } from './statistics-filters-toolbar';
-import { MyStatisticsScreen } from './my-statistics-screen';
+import { MyStatisticsScreen, StatisticsContent } from './my-statistics-screen';
+import {
+  StatisticsHeaderSkeleton,
+  StatisticsInitialLoadingState,
+} from './statistics-loading-state';
 
 const state = vi.hoisted(() => ({
   slots: [] as unknown[],
   index: 0,
   effects: [] as (() => void)[],
   status: 'success' as 'loading' | 'success' | 'error',
+  calendarStatus: 'loading' as 'loading' | 'success' | 'error',
+  projectsStatus: 'loading' as 'loading' | 'success' | 'error',
   retry: vi.fn(),
 }));
 vi.mock('react', async (original) => ({
@@ -57,6 +63,12 @@ vi.mock('../hooks/use-statistics-projects', () => ({
       state.status === 'success'
         ? [{ id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', name: 'Taskly' }]
         : [],
+  }),
+}));
+vi.mock('../hooks/use-statistics-data', () => ({
+  useStatisticsData: () => ({
+    calendar: { status: state.calendarStatus },
+    projects: { status: state.projectsStatus },
   }),
 }));
 vi.mock('@/assets/icons/statistics/range-previous.svg', () => ({ default: () => null }));
@@ -118,6 +130,8 @@ beforeEach(() => {
   state.index = 0;
   state.effects = [];
   state.status = 'success';
+  state.calendarStatus = 'loading';
+  state.projectsStatus = 'loading';
   vi.clearAllMocks();
   vi.stubGlobal('fetch', vi.fn());
 });
@@ -172,16 +186,23 @@ describe('statistics filter controls', () => {
         filters: initialStatisticsFilters(),
         onChange: vi.fn(),
       });
-      const select = find(
-        tree,
-        (element) => element.type === 'select' && element.props['aria-label'] === 'Project',
-      );
-      expect(select.props.disabled).toBe(true);
       const html = renderToStaticMarkup(tree);
-      expect(html).toContain(
-        status === 'loading' ? 'Loading projects...' : 'Unable to load projects.',
-      );
-      if (status === 'error') {
+      if (status === 'loading') {
+        expect(html).toContain('aria-label="Loading project options"');
+        expect(html).toContain('motion-reduce:animate-none');
+        expect(html).not.toContain('Loading projects...');
+        expect(
+          elements(tree).some(
+            (element) => element.type === 'select' && element.props['aria-label'] === 'Project',
+          ),
+        ).toBe(false);
+      } else {
+        const select = find(
+          tree,
+          (element) => element.type === 'select' && element.props['aria-label'] === 'Project',
+        );
+        expect(select.props.disabled).toBe(true);
+        expect(html).toContain('Unable to load projects.');
         click(tree, 'Retry');
         expect(state.retry).toHaveBeenCalledOnce();
       }
@@ -257,14 +278,60 @@ describe('statistics filter controls', () => {
   it('initializes the local filters after mount and makes no statistics request', () => {
     state.index = 0;
     const loading = MyStatisticsScreen();
-    expect(
-      elements(loading).some((element) => element.props.children === 'Preparing filters...'),
-    ).toBe(true);
+    find(loading, (element) => element.type === StatisticsHeaderSkeleton);
+    find(loading, (element) => element.type === StatisticsInitialLoadingState);
+    const loadingMarkup = renderToStaticMarkup(loading);
+    expect(loadingMarkup).toContain('aria-label="Loading statistics dashboard"');
+    expect(loadingMarkup).toContain('h-9 w-\[218px\]');
+    expect(loadingMarkup).not.toContain('Manage your deadlines');
+    expect(elements(loading).some((element) => element.props.children === 'Weekly Planner')).toBe(
+      false,
+    );
     state.effects.shift()?.();
     state.index = 0;
     const ready = MyStatisticsScreen();
     const toolbar = find(ready, (element) => element.type === StatisticsFiltersToolbar);
     expect(toolbar.props.filters).toMatchObject({ p_project_id: null, p_status: null });
+    find(ready, (element) => element.type === StatisticsHeaderSkeleton);
+    const content = find(ready, (element) => element.type === StatisticsContent);
+    (content.props.onInitialSettled as (value: boolean) => void)(true);
+    state.index = 0;
+    const settled = MyStatisticsScreen();
+    expect(elements(settled).some((element) => element.props.children === 'Weekly Planner')).toBe(
+      true,
+    );
+    find(settled, (element) => element.type === StatisticsFiltersToolbar);
+    const changed = {
+      ...initialStatisticsFilters(new Date(2026, 4, 13)),
+      p_status: 'DONE' as const,
+    };
+    (
+      find(settled, (element) => element.type === StatisticsFiltersToolbar).props.onChange as (
+        value: typeof changed,
+      ) => void
+    )(changed);
+    state.index = 0;
+    const refreshing = MyStatisticsScreen();
+    expect(
+      elements(refreshing).some((element) => element.props.children === 'Weekly Planner'),
+    ).toBe(true);
+    expect(
+      find(refreshing, (element) => element.type === StatisticsContent).props.onInitialSettled,
+    ).toBeUndefined();
     expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('settles the initial header only after both statistics requests finish', () => {
+    const markSettled = vi.fn();
+    state.calendarStatus = 'success';
+    state.projectsStatus = 'loading';
+    StatisticsContent({ filters: initialStatisticsFilters(), onInitialSettled: markSettled });
+    state.effects.shift()?.();
+    expect(markSettled).not.toHaveBeenCalled();
+
+    state.projectsStatus = 'error';
+    StatisticsContent({ filters: initialStatisticsFilters(), onInitialSettled: markSettled });
+    state.effects.shift()?.();
+    expect(markSettled).toHaveBeenCalledExactlyOnceWith(true);
   });
 });

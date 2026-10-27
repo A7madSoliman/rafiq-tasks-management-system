@@ -36,6 +36,9 @@ describe('statistics section composition', () => {
     expect((markup.match(/min-h-\[104px\]/g) ?? []).length).toBe(3);
     expect((markup.match(/h-\[420px\]/g) ?? []).length).toBe(7);
     expect(markup).toContain('border-\[14px\]');
+    expect(markup).not.toContain('Tasks by Status');
+    expect(markup).not.toContain('Counts use the selected dates only.');
+    expect(markup).toContain('class="sr-only">Task Statistics</h2>');
     expect(markup).not.toContain('Summary loaded');
     expect(markup).not.toContain('Retry');
   });
@@ -66,6 +69,7 @@ describe('statistics section composition', () => {
     expect(projectsLoading).toContain('Chart loaded');
     expect(projectsLoading).toContain('Loading project statistics');
     expect(projectsLoading).not.toContain('Loading calendar statistics');
+    expect(projectsLoading).not.toContain('Counts use the selected dates only.');
   });
 
   it('keeps successful calendar sections visible if projects fail, with project retry', () => {
