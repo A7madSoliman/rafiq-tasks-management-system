@@ -17,6 +17,37 @@ Built with Next.js App Router, React, and TypeScript, the application connects a
 - **My Statistics:** explore task totals, completed and overdue counts, a calendar, status breakdowns, and counts per project. Calendar statistics support date, project, and status filters.
 - **Responsive UI:** desktop sidebar and board layouts adapt to a mobile drawer, bottom navigation, and task list. Loading skeletons, empty states, validation feedback, retry actions, and toast notifications support data-driven flows.
 
+## Screenshots
+
+### Desktop
+
+**Projects overview** — Project cards with shortcuts to epics, tasks, members, and details.
+
+![Taskly desktop projects overview](docs/screenshots/projects-desktop.png)
+
+**Epics management** — Project epics with assignees, deadlines, search, and pagination.
+
+![Taskly desktop epics management](docs/screenshots/epics-desktop.png)
+
+**Tasks board** — Tasks organized into horizontally scrollable workflow columns.
+
+![Taskly desktop tasks board](docs/screenshots/tasks-desktop.png)
+
+**My Statistics** — Weekly task counts, filters, and calendar summaries.
+
+![Taskly desktop statistics dashboard](docs/screenshots/statistics-desktop.png)
+
+### Mobile
+
+The responsive tasks view and statistics dashboard adapt to a narrow viewport.
+
+<p>
+  <img src="docs/screenshots/tasks-mobile.png" alt="Taskly mobile tasks view with statuses and bottom navigation" width="280" />
+  <img src="docs/screenshots/statistics-mobile.png" alt="Taskly mobile statistics dashboard with filters and calendar" width="280" />
+</p>
+
+_Left: Tasks with search and status labels. Right: My Statistics with filters and a daily calendar._
+
 ## Technology stack
 
 | Area                 | Technologies                                                              |
