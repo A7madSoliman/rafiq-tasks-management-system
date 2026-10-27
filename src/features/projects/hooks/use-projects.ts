@@ -19,6 +19,16 @@ type ProjectsState = {
   loadMoreError: boolean;
 };
 
+function uniqueProjects(projects: Project[]): Project[] {
+  const seen = new Set<string>();
+
+  return projects.filter((project) => {
+    if (seen.has(project.id)) return false;
+    seen.add(project.id);
+    return true;
+  });
+}
+
 export function useProjects(currentPage = 1) {
   const router = useRouter();
   const loadMoreInFlightRef = useRef(false);
@@ -91,8 +101,9 @@ export function useProjects(currentPage = 1) {
 
         setState({
           page,
-          projects,
+          projects: uniqueProjects(projects),
           totalCount,
+          // Offsets count API rows, including duplicates, rather than rendered projects.
           nextOffset: offset + projects.length,
           status: 'success',
           isLoadingMore: false,
@@ -230,13 +241,9 @@ export function useProjects(currentPage = 1) {
           return current;
         }
 
-        const existingProjectIds = new Set(current.projects.map((project) => project.id));
-
-        const newProjects = projects.filter((project) => !existingProjectIds.has(project.id));
-
         return {
           ...current,
-          projects: [...current.projects, ...newProjects],
+          projects: uniqueProjects([...current.projects, ...projects]),
           totalCount,
           nextOffset: offset + projects.length,
           isLoadingMore: false,
